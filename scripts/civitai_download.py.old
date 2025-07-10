@@ -151,10 +151,6 @@ def create_model_item(dl_url, model_filename, install_path, model_name, version_
 
 def selected_to_queue(model_list, subfolder, download_start, create_json, current_html):
     global total_count, current_count
-    output_basemodel = "default_value"  # Replace with an appropriate default
-    nsfw = False  # Define or retrieve these variables as needed
-    model_uploader = "default_uploader"  # Define or retrieve appropriately
-
     if gl.download_queue:
         number = download_start
     else:
@@ -187,9 +183,7 @@ def selected_to_queue(model_list, subfolder, download_start, create_json, curren
             
         default_subfolder = _api.sub_folder_value(content_type, desc)
         if default_subfolder != "None":
-            default_subfolder = _file.convertCustomFolder(
-                default_subfolder, output_basemodel, nsfw, model_uploader, model_name, model_id, version_name, version.get("id")
-            )
+            default_subfolder = _file.convertCustomFolder(default_subfolder, output_basemodel, nsfw, model_uploader, model_name, model_id, version_name, version_id)
 
         if subfolder and subfolder != "None" and subfolder != "Only available if the selected files are of the same model type":
             from_batch = False
@@ -213,13 +207,13 @@ def selected_to_queue(model_list, subfolder, download_start, create_json, curren
     
     html = download_manager_html(current_html)
 
-    return (
-        gr.Button.update(interactive=False, visible=False),  # Download Button
-        gr.Button.update(interactive=True, visible=True),  # Cancel Button
-        gr.Button.update(interactive=True if len(gl.download_queue) > 1 else False, visible=True),  # Cancel All Button
-        gr.Textbox.update(value=number),  # Download Start Trigger
-        gr.HTML.update(value='<div style="min-height: 100px;"></div>'),  # Download Progress
-        gr.HTML.update(value=html)  # Download Manager HTML
+    return  (
+            gr.Button.update(interactive=False, visible=False), # Download Button
+            gr.Button.update(interactive=True, visible=True), # Cancel Button
+            gr.Button.update(interactive=True if len(gl.download_queue) > 1 else False, visible=True), # Cancel All Button
+            gr.Textbox.update(value=number), # Download Start Trigger
+            gr.HTML.update(value='<div style="min-height: 100px;"></div>'), # Download Progress
+            gr.HTML.update(value=html) # Download Manager HTML
     )
 
 
