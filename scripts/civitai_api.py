@@ -6,7 +6,7 @@ import urllib.parse
 import urllib.error
 import os
 import re
-import datetime
+# import datetime
 import platform
 from PIL import Image
 from io import BytesIO
@@ -23,6 +23,7 @@ import scripts.civitai_file_manage as _file
 
 gl.init()
 
+
 def contenttype_folder(content_type, desc=None, fromCheck=False, custom_folder=None):
     use_LORA = getattr(opts, "use_LORA", False)
     folder = None
@@ -36,40 +37,40 @@ def contenttype_folder(content_type, desc=None, fromCheck=False, custom_folder=N
     else:
         main_models = models_path
         main_data = data_path
-        
+
     if content_type == "modelFolder":
         folder = os.path.join(main_models)
-        
+
     if content_type == "Checkpoint":
         if cmd_opts.ckpt_dir and not custom_folder:
             folder = cmd_opts.ckpt_dir
         else:
-            folder = os.path.join(main_models,"Stable-diffusion")
-            
+            folder = os.path.join(main_models, "Stable-diffusion")
+
     elif content_type == "Hypernetwork":
         if cmd_opts.hypernetwork_dir and not custom_folder:
             folder = cmd_opts.hypernetwork_dir
         else:
             folder = os.path.join(main_models, "hypernetworks")
-        
+
     elif content_type == "TextualInversion":
         if cmd_opts.embeddings_dir and not custom_folder:
             folder = cmd_opts.embeddings_dir
         else:
             folder = os.path.join(main_data, "embeddings")
-        
+
     elif content_type == "AestheticGradient":
         if not custom_folder:
             folder = os.path.join(extensions_dir, "stable-diffusion-webui-aesthetic-gradients", "aesthetic_embeddings")
         else:
             folder = os.path.join(custom_folder, "aesthetic_embeddings")
-            
+
     elif content_type == "LORA":
         if cmd_opts.lora_dir and not custom_folder:
             folder = cmd_opts.lora_dir
         else:
             folder = folder = os.path.join(main_models, "Lora")
-        
+
     elif content_type == "LoCon":
         folder = os.path.join(main_models, "LyCORIS")
         if use_LORA and not fromCheck:
@@ -83,22 +84,22 @@ def contenttype_folder(content_type, desc=None, fromCheck=False, custom_folder=N
             folder = cmd_opts.lora_dir
         else:
             folder = folder = os.path.join(main_models, "Lora")
-            
+
     elif content_type == "VAE":
         if cmd_opts.vae_dir and not custom_folder:
             folder = cmd_opts.vae_dir
         else:
             folder = os.path.join(main_models, "VAE")
-            
+
     elif content_type == "Controlnet":
         if hasattr(cmd_opts, 'controlnet_dir') and cmd_opts.controlnet_dir and not custom_folder:
             folder = cmd_opts.controlnet_dir
         else:
             folder = os.path.join(main_models, "ControlNet")
-            
+
     elif content_type == "Poses":
         folder = os.path.join(main_models, "Poses")
-    
+
     elif content_type == "Upscaler":
         if "SWINIR" in desc:
             if cmd_opts.swinir_models_path and not custom_folder:
@@ -125,31 +126,33 @@ def contenttype_folder(content_type, desc=None, fromCheck=False, custom_folder=N
                 folder = cmd_opts.esrgan_models_path
             else:
                 folder = os.path.join(main_models, "ESRGAN")
-            
+
     elif content_type == "MotionModule":
         folder = os.path.join(extensions_dir, "sd-webui-animatediff", "model")
-        
+
     elif content_type == "Workflows":
         folder = os.path.join(main_models, "Workflows")
-        
+
     elif content_type == "Other":
         if "ADETAILER" in desc:
             folder = os.path.join(main_models, "adetailer")
         else:
             folder = os.path.join(main_models, "Other")
-    
+
     elif content_type == "Wildcards":
         folder = os.path.join(extensions_dir, "UnivAICharGen", "wildcards")
         if not os.path.exists(folder):
             folder = os.path.join(extensions_dir, "sd-dynamic-prompts", "wildcards")
-    
+
     return folder
+
 
 def model_list_html(json_data):
     video_playback = getattr(opts, "video_playback", True)
     playback = ""
-    if video_playback: playback = "autoplay loop"
-    
+    if video_playback:
+        playback = "autoplay loop"
+
     hide_early_access = getattr(opts, "hide_early_access", True)
     filtered_items = []
     current_time = datetime.now(timezone.utc)
@@ -173,19 +176,19 @@ def model_list_html(json_data):
         if versions_to_keep:
             item['modelVersions'] = versions_to_keep
             filtered_items.append(item)
-            
+
     json_data['items'] = filtered_items
-    
+
     HTML = '<div class="column civmodellist">'
     sorted_models = {}
     existing_files = set()
     existing_files_sha256 = set()
     model_folders = set()
-    
+
     for item in json_data['items']:
         model_folder = os.path.join(contenttype_folder(item['type'], item['description']))
         model_folders.add(model_folder)
-    
+
     for folder in model_folders:
         for root, dirs, files in os.walk(folder, followlinks=True):
             for file in files:
@@ -203,7 +206,7 @@ def model_list_html(json_data):
                                 print(f"Invalid JSON data in {json_path}. Expected a dictionary.")
                         except Exception as e:
                             print(f"Error decoding JSON in {json_path}: {e}")
-    
+
     for item in json_data['items']:
         model_id = item.get('id')
         model_name = item.get('name')
@@ -213,22 +216,22 @@ def model_list_html(json_data):
         try:
             if 'baseModel' in item['modelVersions'][0]:
                 baseModel = item['modelVersions'][0]['baseModel']
-        except:
+        except (IndexError, KeyError, TypeError):
             baseModel = "Not Found"
-        
+
         try:
             if 'publishedAt' in item['modelVersions'][0]:
                 date = item['modelVersions'][0]['publishedAt'].split('T')[0]
-        except:
+        except (IndexError, KeyError, TypeError):
             date = "Not Found"
-        
+
         if item.get("nsfw"):
             nsfw = "civcardnsfw"
 
         if gl.sortNewest:
             if date not in sorted_models:
                 sorted_models[date] = []
-        
+
         if any(item['modelVersions']):
             if len(item['modelVersions'][0]['images']) > 0:
                 media_type = item["modelVersions"][0]["images"][0]["type"]
@@ -239,18 +242,18 @@ def model_list_html(json_data):
                 else:
                     imgtag = f'<img src="{image}"></img>'
             else:
-                imgtag = f'<img src="./file=html/card-no-preview.png"></img>'
-            
+                imgtag = '<img src="./file=html/card-no-preview.png"></img>'
+
             installstatus = None
-            
+
             for version in reversed(item['modelVersions']):
                 for file in version.get('files', []):
                     file_name = os.path.splitext(file['name'])[0]
                     file_extension = os.path.splitext(file['name'])[1]
                     file_name = f"{file_name}_{file['id']}{file_extension}"
                     file_sha256 = file.get('hashes', {}).get('SHA256', "").upper()
-                    
-                    #filename_check
+
+                    # filename_check
                     name_match = file_name.lower() in existing_files
                     sha256_match = file_sha256 in existing_files_sha256
                     if name_match or sha256_match:
@@ -262,23 +265,26 @@ def model_list_html(json_data):
             model_string = escape(f"{model_name_js} ({model_id})")
             model_card = f'<figure class="civmodelcard {nsfw} {installstatus}" base-model="{baseModel}" date="{date}" onclick="select_model(\'{model_string}\', event)">'
             if installstatus != "civmodelcardinstalled":
-                model_card += f'<input type="checkbox" class="model-checkbox" id="checkbox-{model_string}" onchange="multi_model_select(\'{model_string}\', \'{item["type"]}\', this.checked)" style="opacity: 0; position: absolute; top: 10px; right: 10px;">' \
-                            + f'<label for="checkbox-{model_string}" class="custom-checkbox"></label>'
+                model_card += (
+                    f'<input type="checkbox" class="model-checkbox" id="checkbox-{model_string}" '
+                    f'onchange="multi_model_select(\'{model_string}\', \'{item["type"]}\', this.checked)" '
+                    f'style="opacity: 0; position: absolute; top: 10px; right: 10px;">'
+                    f'<label for="checkbox-{model_string}" class="custom-checkbox"></label>'
+                )
             if len(item["name"]) > 40:
                 display_name = item["name"][:40] + '...'
             else:
                 display_name = item["name"]
-            
+
             display_name = escape(display_name)
             full_name = escape(item['name'])
-            model_card += imgtag \
-                        + f'<figcaption title="{full_name}">{display_name}</figcaption></figure>'
-        
+            model_card += imgtag + f'<figcaption title="{full_name}">{display_name}</figcaption></figure>'
+
         if gl.sortNewest:
             sorted_models[date].append(model_card)
         else:
             HTML += model_card
-    
+
     if gl.sortNewest:
         for date, cards in sorted(sorted_models.items(), reverse=True):
             HTML += f'<div class="date-section"><h4>{date}</h4><hr style="margin-bottom: 5px; margin-top: 5px;">'
@@ -286,24 +292,25 @@ def model_list_html(json_data):
             for card in cards:
                 HTML += card
             HTML += '</div></div>'
-            
+
     HTML += '</div>'
     return HTML
 
+
 def create_api_url(content_type=None, sort_type=None, period_type=None, use_search_term=None, base_filter=None, only_liked=None, tile_count=None, search_term=None, nsfw=None, isNext=None):
     base_url = "https://civitai.com/api/v1/models"
-    version_url = "https://civitai.com/api/v1/model-versions"
-    
+    # version_url = "https://civitai.com/api/v1/model-versions"
+
     if isNext is not None:
         api_url = gl.json_data['metadata']['nextPage' if isNext else 'prevPage']
         debug_print(api_url)
         return api_url
-    
+
     params = {'limit': tile_count, 'sort': sort_type, 'period': period_type.replace(" ", "") if period_type else None}
-    
+
     if content_type:
         params["types"] = content_type
-    
+
     if use_search_term != "None" and search_term:
         search_term = search_term.replace("\\", "\\\\").lower()
         if "civitai.com" in search_term:
@@ -314,15 +321,15 @@ def create_api_url(content_type=None, sort_type=None, period_type=None, use_sear
             key_map = {"User name": "username", "Tag": "tag"}
             search_key = key_map.get(use_search_term, "query")
             params[search_key] = search_term
-    
+
     if base_filter:
         params["baseModels"] = base_filter
-    
+
     if only_liked:
         params["favorites"] = "true"
-    
+
     params["nsfw"] = "true" if nsfw else "false"
-    
+
     query_parts = []
     for key, value in params.items():
         if isinstance(value, list):
@@ -330,12 +337,13 @@ def create_api_url(content_type=None, sort_type=None, period_type=None, use_sear
                 query_parts.append((key, item))
         else:
             query_parts.append((key, value))
-    
+
     query_string = urllib.parse.urlencode(query_parts, doseq=True, quote_via=urllib.parse.quote)
     api_url = f"{base_url}?{query_string}"
-    
+
     debug_print(api_url)
     return api_url
+
 
 def convert_LORA_LoCon(content_type):
     use_LORA = getattr(opts, "use_LORA", False)
@@ -350,25 +358,26 @@ def convert_LORA_LoCon(content_type):
                 content_type.append('DoRA')
     return content_type
 
+
 def initial_model_page(content_type=None, sort_type=None, period_type=None, use_search_term=None, search_term=None, current_page=None, base_filter=None, only_liked=None, nsfw=None, tile_count=None, from_update_tab=False):
     content_type = convert_LORA_LoCon(content_type)
     current_inputs = (content_type, sort_type, period_type, use_search_term, search_term, tile_count, base_filter, nsfw)
-    if current_inputs != gl.previous_inputs and gl.previous_inputs != None or not current_page:
+    if (gl.previous_inputs is not None and current_inputs != gl.previous_inputs) or not current_page:
         current_page = 1
     gl.previous_inputs = current_inputs
-    
+
     if not from_update_tab:
         gl.from_update_tab = False
-        
+
         if current_page == 1:
             api_url = create_api_url(content_type, sort_type, period_type, use_search_term, base_filter, only_liked, tile_count, search_term, nsfw)
-            gl.url_list = {1 : api_url}
+            gl.url_list = {1: api_url}
         else:
             api_url = gl.url_list.get(current_page)
     else:
         api_url = gl.url_list.get(current_page)
         gl.from_update_tab = True
-    
+
     gl.json_data = request_civit_api(api_url)
 
     max_page = 1
@@ -376,51 +385,53 @@ def initial_model_page(content_type=None, sort_type=None, period_type=None, use_
     hasPrev, hasNext = False, False
     if not isinstance(gl.json_data, dict):
         HTML = api_error_msg(gl.json_data)
-        
+
     else:
         gl.json_data = insert_metadata(1)
-        
+
         metadata = gl.json_data['metadata']
         hasNext = 'nextPage' in metadata
         hasPrev = 'prevPage' in metadata
-        
+
         for item in gl.json_data['items']:
             if len(item['modelVersions']) > 0:
                 model_list.append(f"{item['name']} ({item['id']})")
-        
+
         max_page = max(gl.url_list.keys())
         HTML = model_list_html(gl.json_data)
-    
-    return  (
-            gr.Dropdown.update(choices=model_list, value="", interactive=True), # Model List
-            gr.Dropdown.update(choices=[], value=""), # Version List
-            gr.HTML.update(value=HTML), # HTML Tiles
-            gr.Button.update(interactive=hasPrev), # Prev Page Button
-            gr.Button.update(interactive=hasNext), # Next Page Button
-            gr.Slider.update(value=current_page, maximum=max_page), # Page Slider
-            gr.Button.update(interactive=False), # Save Tags
-            gr.Button.update(interactive=False), # Save Images
-            gr.Button.update(interactive=False, visible=False if gl.isDownloading else True), # Download Button
-            gr.Button.update(interactive=False, visible=False), # Delete Button
-            gr.Textbox.update(interactive=False, value=None, visible=True), # Install Path
-            gr.Dropdown.update(choices=[], value="", interactive=False), # Sub Folder List
-            gr.Dropdown.update(choices=[], value="", interactive=False), # File List
-            gr.HTML.update(value='<div style="min-height: 0px;"></div>'), # Preview HTML
-            gr.Textbox.update(value=None), # Trained Tags
-            gr.Textbox.update(value=None), # Base Model
-            gr.Textbox.update(value=None) # Model Filename
+
+    return (
+        gr.Dropdown.update(choices=model_list, value="", interactive=True),  # Model List
+        gr.Dropdown.update(choices=[], value=""),  # Version List
+        gr.HTML.update(value=HTML),  # HTML Tiles
+        gr.Button.update(interactive=hasPrev),  # Prev Page Button
+        gr.Button.update(interactive=hasNext),  # Next Page Button
+        gr.Slider.update(value=current_page, maximum=max_page),  # Page Slider
+        gr.Button.update(interactive=False),  # Save Tags
+        gr.Button.update(interactive=False),  # Save Images
+        gr.Button.update(interactive=False, visible=False if gl.isDownloading else True),  # Download Button
+        gr.Button.update(interactive=False, visible=False),  # Delete Button
+        gr.Textbox.update(interactive=False, value=None, visible=True),  # Install Path
+        gr.Dropdown.update(choices=[], value="", interactive=False),  # Sub Folder List
+        gr.Dropdown.update(choices=[], value="", interactive=False),  # File List
+        gr.HTML.update(value='<div style="min-height: 0px;"></div>'),  # Preview HTML
+        gr.Textbox.update(value=None),  # Trained Tags
+        gr.Textbox.update(value=None),  # Base Model
+        gr.Textbox.update(value=None)  # Model Filename
     )
+
 
 def prev_model_page(content_type, sort_type, period_type, use_search_term, search_term, current_page, base_filter, only_liked, nsfw, tile_count):
     return next_model_page(content_type, sort_type, period_type, use_search_term, search_term, current_page, base_filter, only_liked, nsfw, tile_count, isNext=False)
 
+
 def next_model_page(content_type, sort_type, period_type, use_search_term, search_term, current_page, base_filter, only_liked, nsfw, tile_count, isNext=True):
     content_type = convert_LORA_LoCon(content_type)
-        
+
     current_inputs = (content_type, sort_type, period_type, use_search_term, search_term, tile_count, base_filter, nsfw)
-    if current_inputs != gl.previous_inputs and gl.previous_inputs != None:
+    if gl.previous_inputs is not None and current_inputs != gl.previous_inputs:
         return initial_model_page(content_type, sort_type, period_type, use_search_term, search_term, current_page, base_filter, only_liked, nsfw, tile_count)
-    
+
     api_url = create_api_url(isNext=isNext)
     gl.json_data = request_civit_api(api_url)
 
@@ -430,57 +441,59 @@ def next_model_page(content_type, sort_type, period_type, use_search_term, searc
     hasPrev, hasNext = False, False
     if not isinstance(gl.json_data, dict):
         HTML = api_error_msg(gl.json_data)
-        
-    else: 
+
+    else:
         next_page = current_page + 1 if isNext else current_page - 1
 
         gl.json_data = insert_metadata(next_page, api_url)
-        
+
         metadata = gl.json_data['metadata']
         hasNext = 'nextPage' in metadata
         hasPrev = 'prevPage' in metadata
-        
+
         for item in gl.json_data['items']:
             if len(item['modelVersions']) > 0:
                 model_list.append(f"{item['name']} ({item['id']})")
-        
+
         max_page = max(gl.url_list.keys())
         HTML = model_list_html(gl.json_data)
-    
-    return  (
-            gr.Dropdown.update(choices=model_list, value="", interactive=True), # Model List
-            gr.Dropdown.update(choices=[], value=""), # Version List
-            gr.HTML.update(value=HTML), # HTML Tiles
-            gr.Button.update(interactive=hasPrev), # Prev Page Button
-            gr.Button.update(interactive=hasNext), # Next Page Button
-            gr.Slider.update(value=next_page, maximum=max_page), # Current Page
-            gr.Button.update(interactive=False), # Save Tags
-            gr.Button.update(interactive=False), # Save Images
-            gr.Button.update(interactive=False, visible=False if gl.isDownloading else True), # Download Button
-            gr.Button.update(interactive=False, visible=False), # Delete Button
-            gr.Textbox.update(interactive=False, value=None), # Install Path
-            gr.Dropdown.update(choices=[], value="", interactive=False), # Sub Folder List
-            gr.Dropdown.update(choices=[], value="", interactive=False), # File List
-            gr.HTML.update(value='<div style="min-height: 0px;"></div>'), # Preview HTML
-            gr.Textbox.update(value=None), # Trained Tags
-            gr.Textbox.update(value=None), # Base Model
-            gr.Textbox.update(value=None) # Model Filename
+
+    return (
+        gr.Dropdown.update(choices=model_list, value="", interactive=True),  # Model List
+        gr.Dropdown.update(choices=[], value=""),  # Version List
+        gr.HTML.update(value=HTML),  # HTML Tiles
+        gr.Button.update(interactive=hasPrev),  # Prev Page Button
+        gr.Button.update(interactive=hasNext),  # Next Page Button
+        gr.Slider.update(value=next_page, maximum=max_page),  # Current Page
+        gr.Button.update(interactive=False),  # Save Tags
+        gr.Button.update(interactive=False),  # Save Images
+        gr.Button.update(interactive=False, visible=False if gl.isDownloading else True),  # Download Button
+        gr.Button.update(interactive=False, visible=False),  # Delete Button
+        gr.Textbox.update(interactive=False, value=None),  # Install Path
+        gr.Dropdown.update(choices=[], value="", interactive=False),  # Sub Folder List
+        gr.Dropdown.update(choices=[], value="", interactive=False),  # File List
+        gr.HTML.update(value='<div style="min-height: 0px;"></div>'),  # Preview HTML
+        gr.Textbox.update(value=None),  # Trained Tags
+        gr.Textbox.update(value=None),  # Base Model
+        gr.Textbox.update(value=None)  # Model Filename
     )
+
 
 def insert_metadata(page_nr, api_url=None):
     metadata = gl.json_data['metadata']
-    
+
     if not metadata.get('prevPage', None) and page_nr > 1:
         metadata['prevPage'] = gl.url_list.get((page_nr - 1))
-    
+
     if gl.from_update_tab:
         if gl.url_list.get((page_nr + 1), None):
             metadata['nextPage'] = gl.url_list.get((page_nr + 1))
-    
+
     elif page_nr not in gl.url_list:
         gl.url_list[page_nr] = api_url
-    
+
     return gl.json_data
+
 
 def update_model_versions(model_id, json_input=None):
     if json_input:
@@ -491,14 +504,14 @@ def update_model_versions(model_id, json_input=None):
         if int(item['id']) == int(model_id):
             content_type = item['type']
             desc = item.get('description', "None")
-            
+
             versions_dict = defaultdict(list)
             installed_versions = set()
 
             model_folder = os.path.join(contenttype_folder(content_type, desc))
             gl.main_folder = model_folder
             versions = item['modelVersions']
-            
+
             version_files = set()
             for version in versions:
                 versions_dict[version['name']].append(item["name"])
@@ -526,7 +539,7 @@ def update_model_versions(model_id, json_input=None):
                         except Exception as e:
                             print(f"failed to read: \"{file}\": {e}")
 
-                    #filename_check
+                    # filename_check
                     for version_name, version_filename, _ in version_files:
                         if file.lower() == version_filename.lower():
                             installed_versions.add(version_name)
@@ -536,10 +549,11 @@ def update_model_versions(model_id, json_input=None):
             display_version_names = [f"{v} [Installed]" if v in installed_versions else v for v in version_names]
             default_installed = next((f"{v} [Installed]" for v in installed_versions), None)
             default_value = default_installed or next(iter(version_names), None)
-            
-            return gr.Dropdown.update(choices=display_version_names, value=default_value, interactive=True) # Version List
-    
-    return gr.Dropdown.update(choices=[], value=None, interactive=False) # Version List
+
+            return gr.Dropdown.update(choices=display_version_names, value=default_value, interactive=True)  # Version List
+
+    return gr.Dropdown.update(choices=[], value=None, interactive=False)  # Version List
+
 
 def cleaned_name(file_name):
     if platform.system() == "Windows":
@@ -552,6 +566,7 @@ def cleaned_name(file_name):
     clean_name = re.sub(r'\s+', ' ', clean_name.strip())
 
     return f"{clean_name}{extension}"
+
 
 def fetch_and_process_image(image_url):
     proxies, ssl = get_proxies()
@@ -567,8 +582,9 @@ def fetch_and_process_image(image_url):
             image = Image.open(image_url)
             geninfo, _ = read_info_from_image(image)
             return geninfo
-    except:
+    except (IndexError, KeyError, TypeError):
         return None
+
 
 def extract_model_info(input_string):
     last_open_parenthesis = input_string.rfind("(")
@@ -579,27 +595,29 @@ def extract_model_info(input_string):
 
     return name, int(id_number)
 
+
 def update_model_info(model_string=None, model_version=None, only_html=False, input_id=None, json_input=None, from_preview=False):
     video_playback = getattr(opts, "video_playback", True)
     meta_btn = getattr(opts, "individual_meta_btn", True)
     playback = ""
-    if video_playback: playback = "autoplay loop"
-    
+    if video_playback:
+        playback = "autoplay loop"
+
     if json_input:
         api_data = json_input
     else:
         api_data = gl.json_data
-    
+
     BtnDownInt = True
     BtnDel = False
     BtnImage = False
     model_id = None
-    
+
     if not input_id:
         _, model_id = extract_model_info(model_string)
     else:
         model_id = input_id
-    
+
     if model_version and "[Installed]" in model_version:
         model_version = model_version.replace(" [Installed]", "")
     if model_id:
@@ -664,7 +682,7 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                     output_basemodel = selected_version['baseModel']
                 for file in selected_version['files']:
                     dl_dict[file['name']] = file['downloadUrl']
-                    
+
                     if not model_filename:
                         model_filename = os.path.splitext(file['name'])[0]
                         model_extension = os.path.splitext(file['name'])[1]
@@ -672,13 +690,13 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                         dl_url = file['downloadUrl']
                         gl.json_info = item
                         sha256_value = file['hashes'].get('SHA256', 'Unknown')
-                        
+
                     size = file['metadata'].get('size', 'Unknown')
                     format = file['metadata'].get('format', 'Unknown')
                     fp = file['metadata'].get('fp', 'Unknown')
                     sizeKB = file.get('sizeKB', 0) * 1024
                     filesize = _download.convert_size(sizeKB)
-                    
+
                     unique_file_name = f"{size} {format} {fp} ({filesize})"
                     is_primary = file.get('primary', False)
                     file_list.append(unique_file_name)
@@ -694,7 +712,7 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                         dl_url = file['downloadUrl']
                         gl.json_info = item
                         sha256_value = file['hashes'].get('SHA256', 'Unknown')
-                
+
                 safe_tensor_found = False
                 pickle_tensor_found = False
                 if is_LORA and file_dict:
@@ -704,24 +722,24 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                             safe_tensor_found = True
                         if "PickleTensor" in file_format:
                             pickle_tensor_found = True
-                            
+
                     if safe_tensor_found and pickle_tensor_found:
                         if "PickleTensor" in file_dict[0].get("format", ""):
                             if file_dict[0].get("sizeKB", 0) <= 100:
                                 model_folder = os.path.join(contenttype_folder("TextualInversion"))
-                
+
                 model_url = selected_version.get('downloadUrl', '')
                 model_main_url = f"https://civitai.com/models/{item['id']}"
                 img_html = '<div class="sampleimgs"><input type="radio" name="zoomRadio" id="resetZoom" class="zoom-radio" checked>'
-                
+
                 url = f"https://civitai.com/api/v1/model-versions/{selected_version['id']}"
                 api_version = request_civit_api(url)
-                
+
                 for index, pic in enumerate(api_version['images']):
-                    
+
                     if from_preview:
                         index = f"preview_{index}"
-                    
+
                     class_name = 'class="model-block"'
                     if pic.get('nsfwLevel') >= 4:
                         class_name = 'class="civnsfw model-block"'
@@ -732,14 +750,14 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                     <input type="radio" name="zoomRadio" id="zoomRadio{index}" class="zoom-radio">
                     <label for="zoomRadio{index}" class="zoom-img-container">
                     '''
-                    
+
                     prompt_dict = pic.get('meta', {})
-                    
+
                     meta_button = False
                     if prompt_dict and prompt_dict.get('prompt'):
                         meta_button = True
                     BtnImage = True
-                    
+
                     image_url = re.sub(r'/width=\d+', f'/width={pic["width"]}', pic["url"])
                     if pic['type'] == "video":
                         image_url = image_url.replace("width=", "transcode=true,width=")
@@ -753,7 +771,7 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                         </label>
                         <label for="resetZoom" class="zoom-overlay"></label>
                     '''
-                    
+
                     if meta_button:
                         img_html += f'''
                             <div class="civitai_txt2img" style="margin-top:30px;margin-bottom:30px;">
@@ -762,7 +780,7 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                         '''
                     else:
                         img_html += '</div>'
-                        
+
                     if prompt_dict:
                         img_html += '<div style="margin:1em 0em 1em 1em;text-align:left;line-height:1.5em;" id="image_info"><dl style="gap:10px; display:grid;">'
                         # Define the preferred order of keys
@@ -783,7 +801,7 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                                     "cfgScale": "CFG scale"
                                 }
                                 key = key_map.get(key, key)
-                                
+
                                 if meta_btn:
                                     img_html += f'<div class="civitai-meta-btn" onclick="metaToTxt2Img(\'{escape(str(key))}\', this)"><dt>{escape(str(key))}</dt><dd>{escape(str(value))}</dd></div>'
                                 else:
@@ -810,21 +828,24 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                     img_html = img_html + '</div>'
                 img_html = img_html + '</div>'
                 tags_html = ''.join([f'<span class="civitai-tag">{escape(str(tag))}</span>' for tag in tags])
+
                 def perms_svg(color):
-                    return  f'<span style="display:inline-block;vertical-align:middle;">'\
-                            f'<svg width="15" height="15" viewBox="0 1.5 24 24" stroke-width="4" stroke-linecap="round" stroke="{color}">'
+                    return f'<span style="display:inline-block;vertical-align:middle;">'\
+                           f'<svg width="15" height="15" viewBox="0 1.5 24 24" stroke-width="4" stroke-linecap="round" stroke="{color}">'
                 allow_svg = f'{perms_svg("lime")}<path d="M5 12l5 5l10 -10"></path></svg></span>'
                 deny_svg = f'{perms_svg("red")}<path d="M18 6l-12 12"></path><path d="M6 6l12 12"></path></svg></span>'
                 allowCommercialUse = item.get("allowCommercialUse", [])
-                perms_html= '<p style="line-height: 2; font-weight: bold;">'\
-                            f'{allow_svg if item.get("allowNoCredit") else deny_svg} Use the model without crediting the creator<br/>'\
-                            f'{allow_svg if "Image" in allowCommercialUse else deny_svg} Sell images they generate<br/>'\
-                            f'{allow_svg if "Rent" in allowCommercialUse else deny_svg} Run on services that generate images for money<br/>'\
-                            f'{allow_svg if "RentCivit" in allowCommercialUse else deny_svg} Run on Civitai<br/>'\
-                            f'{allow_svg if item.get("allowDerivatives") else deny_svg} Share merges using this model<br/>'\
-                            f'{allow_svg if "Sell" in allowCommercialUse else deny_svg} Sell this model or merges using this model<br/>'\
-                            f'{allow_svg if item.get("allowDifferentLicense") else deny_svg} Have different permissions when sharing merges'\
-                            '</p>'
+                perms_html = (
+                    '<p style="line-height: 2; font-weight: bold;">'
+                    f'{allow_svg if item.get("allowNoCredit") else deny_svg} Use the model without crediting the creator<br/>'
+                    f'{allow_svg if "Image" in allowCommercialUse else deny_svg} Sell images they generate<br/>'
+                    f'{allow_svg if "Rent" in allowCommercialUse else deny_svg} Run on services that generate images for money<br/>'
+                    f'{allow_svg if "RentCivit" in allowCommercialUse else deny_svg} Run on Civitai<br/>'
+                    f'{allow_svg if item.get("allowDerivatives") else deny_svg} Share merges using this model<br/>'
+                    f'{allow_svg if "Sell" in allowCommercialUse else deny_svg} Sell this model or merges using this model<br/>'
+                    f'{allow_svg if item.get("allowDifferentLicense") else deny_svg} Have different permissions when sharing merges'
+                    '</p>'
+                )
                 version_url = f"{model_main_url}?modelVersionId={selected_version['id']}"
                 if not creator or model_uploader == 'User not found':
                     uploader = f'<h3 class="model-uploader"><span>{escape(str(model_uploader))}</span>{uploader_avatar}</h3>'
@@ -870,10 +891,10 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                 </div>
                 <div align=center>{img_html}</div>
                 '''
-        
+
         if only_html:
             return output_html
-                          
+
         folder_location = "None"
         default_subfolder = "None"
         sub_folders = _file.getSubfolders(model_folder, output_basemodel, nsfw, model_uploader, model_name, model_id, version_name, version_id)
@@ -892,12 +913,12 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                                 folder_location = root
                                 BtnDownInt = False
                                 BtnDel = True
-                                
+
                                 break
                         except Exception as e:
                             print(f"Error decoding JSON: {str(e)}")
             else:
-                #filename_check
+                # filename_check
                 for filename in files:
                     if filename.lower() == model_filename.lower() or filename.lower() == cleaned_name(model_filename).lower():
                         folder_location = root
@@ -921,7 +942,7 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
             folder_path = folder_location
 
         relative_path = os.path.relpath(folder_location, model_folder)
-        default_subfolder = f'{os.sep}{relative_path}' if relative_path != "." else default_subfolder if BtnDel == False else "None"
+        default_subfolder = f'{os.sep}{relative_path}' if relative_path != "." else default_subfolder if not BtnDel else "None"
         if gl.isDownloading:
             item = gl.download_queue[0]
             if int(model_id) == int(item['model_id']):
@@ -933,38 +954,39 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                 if item['version_name'] == model_version and int(item['model_id']) == int(model_id):
                     BtnDownInt = False
                     break
-        
-        return  (
-                gr.HTML.update(value=output_html), # Preview HTML 
-                gr.Textbox.update(value=output_training, interactive=True), # Trained Tags
-                gr.Textbox.update(value=output_basemodel), # Base Model Number
-                gr.Button.update(visible=False if BtnDel else True, interactive=BtnDownInt, value=BtnDownTxt), # Download Button
-                gr.Button.update(interactive=BtnImage), # Images Button
-                gr.Button.update(visible=BtnDel, interactive=BtnDel), # Delete Button
-                gr.Dropdown.update(choices=file_list, value=default_file, interactive=True), # File List
-                gr.Textbox.update(value=cleaned_name(model_filename), interactive=True),  # Model File Name
-                gr.Textbox.update(value=dl_url), # Download URL
-                gr.Textbox.update(value=model_id), # Model ID
-                gr.Textbox.update(value=sha256_value),  # SHA256
-                gr.Textbox.update(interactive=True, value=folder_path if model_name else None), # Install Path
-                gr.Dropdown.update(choices=sub_folders, value=default_subfolder, interactive=True) # Sub Folder List
+
+        return (
+            gr.HTML.update(value=output_html),  # Preview HTML
+            gr.Textbox.update(value=output_training, interactive=True),  # Trained Tags
+            gr.Textbox.update(value=output_basemodel),  # Base Model Number
+            gr.Button.update(visible=False if BtnDel else True, interactive=BtnDownInt, value=BtnDownTxt),  # Download Button
+            gr.Button.update(interactive=BtnImage),  # Images Button
+            gr.Button.update(visible=BtnDel, interactive=BtnDel),  # Delete Button
+            gr.Dropdown.update(choices=file_list, value=default_file, interactive=True),  # File List
+            gr.Textbox.update(value=cleaned_name(model_filename), interactive=True),  # Model File Name
+            gr.Textbox.update(value=dl_url),  # Download URL
+            gr.Textbox.update(value=model_id),  # Model ID
+            gr.Textbox.update(value=sha256_value),  # SHA256
+            gr.Textbox.update(interactive=True, value=folder_path if model_name else None),  # Install Path
+            gr.Dropdown.update(choices=sub_folders, value=default_subfolder, interactive=True)  # Sub Folder List
         )
     else:
-        return  (
-                gr.HTML.update(value=None), # Preview HTML
-                gr.Textbox.update(value=None, interactive=False), # Trained Tags
-                gr.Textbox.update(value=''), # Base Model Number
-                gr.Button.update(visible=False if BtnDel else True, value="Download model"), # Download Button
-                gr.Button.update(interactive=False), # Images Button
-                gr.Button.update(visible=BtnDel, interactive=BtnDel), # Delete Button
-                gr.Dropdown.update(choices=None, value=None, interactive=False), # File List
-                gr.Textbox.update(value=None, interactive=False),  # Model File Name
-                gr.Textbox.update(value=None),  # Download URL
-                gr.Textbox.update(value=None), # Model ID
-                gr.Textbox.update(value=None),  # SHA256
-                gr.Textbox.update(interactive=False, value=None), # Install Path
-                gr.Dropdown.update(choices=None, value=None, interactive=False) # Sub Folder List
+        return (
+            gr.HTML.update(value=None),  # Preview HTML
+            gr.Textbox.update(value=None, interactive=False),  # Trained Tags
+            gr.Textbox.update(value=''),  # Base Model Number
+            gr.Button.update(visible=False if BtnDel else True, value="Download model"),  # Download Button
+            gr.Button.update(interactive=False),  # Images Button
+            gr.Button.update(visible=BtnDel, interactive=BtnDel),  # Delete Button
+            gr.Dropdown.update(choices=None, value=None, interactive=False),  # File List
+            gr.Textbox.update(value=None, interactive=False),  # Model File Name
+            gr.Textbox.update(value=None),  # Download URL
+            gr.Textbox.update(value=None),  # Model ID
+            gr.Textbox.update(value=None),  # SHA256
+            gr.Textbox.update(interactive=False, value=None),  # Install Path
+            gr.Dropdown.update(choices=None, value=None, interactive=False)  # Sub Folder List
         )
+
 
 def sub_folder_value(content_type, desc=None):
     use_LORA = getattr(opts, "use_LORA", False)
@@ -977,9 +999,10 @@ def sub_folder_value(content_type, desc=None):
         folder = getattr(opts, "ESRGAN_default_subfolder", "None")
     else:
         folder = getattr(opts, f"{content_type}_default_subfolder", "None")
-    if folder == None:
+    if folder is None:
         return "None"
     return folder
+
 
 def update_file_info(model_string, model_version, file_metadata):
     file_list = []
@@ -988,7 +1011,7 @@ def update_file_info(model_string, model_version, file_metadata):
     model_name = None
     model_id = None
     model_name, model_id = extract_model_info(model_string)
-    
+
     if model_version and "[Installed]" in model_version:
         model_version = model_version.replace(" [Installed]", "")
     if model_id and model_version:
@@ -1006,12 +1029,12 @@ def update_file_info(model_string, model_version, file_metadata):
                             unique_file_name = f"{size} {format}"
                             file_list.append(unique_file_name)
                             pass
-                        
+
                         if is_LORA and file_list:
                             extracted_formats = [file.split(' ')[1] for file in file_list]
                             if "SafeTensor" in extracted_formats and "PickleTensor" in extracted_formats:
                                 embed_check = True
-                        
+
                         for file in model['files']:
                             model_id = item['id']
                             file_name = file.get('name', 'Unknown')
@@ -1038,7 +1061,7 @@ def update_file_info(model_string, model_version, file_metadata):
                                         installed = True
                                         folder_location = root
                                         break
-                                
+
                                 if not installed:
                                     for root, _, files in os.walk(model_folder, followlinks=True):
                                         for filename in files:
@@ -1047,7 +1070,7 @@ def update_file_info(model_string, model_version, file_metadata):
                                                     try:
                                                         data = json.load(f)
                                                         sha256_value = data.get('sha256')
-                                                        if sha256_value != None and sha256_value.upper() == sha256:
+                                                        if sha256_value is not None and sha256_value.upper() == sha256:
                                                             folder_location = root
                                                             installed = True
                                                             break
@@ -1063,7 +1086,11 @@ def update_file_info(model_string, model_version, file_metadata):
                                 else:
                                     folder_path = folder_location
                                 relative_path = os.path.relpath(folder_location, model_folder)
-                                default_subfolder = f'{os.sep}{relative_path}' if relative_path != "." else default_sub if installed == False else "None"
+                                default_subfolder = (
+                                    f'{os.sep}{relative_path}'
+                                    if relative_path != "."
+                                    else default_sub if not installed else "None"
+                                )
                                 BtnDownInt = not installed
                                 BtnDownTxt = "Download model"
                                 if len(gl.download_queue) > 0:
@@ -1072,34 +1099,35 @@ def update_file_info(model_string, model_version, file_metadata):
                                         if item['version_name'] == model_version:
                                             BtnDownInt = False
                                             break
-                                
-                                return  (
-                                        gr.Textbox.update(value=cleaned_name(file['name']), interactive=True),  # Model File Name Textbox
-                                        gr.Textbox.update(value=dl_url), # Download URL Textbox
-                                        gr.Textbox.update(value=model_id), # Model ID Textbox
-                                        gr.Textbox.update(value=sha256), # sha256 textbox
-                                        gr.Button.update(interactive=BtnDownInt, visible=False if installed else True, value=BtnDownTxt), # Download Button
-                                        gr.Button.update(interactive=True if installed else False, visible=True if installed else False),  # Delete Button
-                                        gr.Textbox.update(interactive=True, value=folder_path if model_name else None), # Install Path
-                                        gr.Dropdown.update(value=default_subfolder, interactive=True) # Sub Folder List
+
+                                return (
+                                    gr.Textbox.update(value=cleaned_name(file['name']), interactive=True),  # Model File Name Textbox
+                                    gr.Textbox.update(value=dl_url),  # Download URL Textbox
+                                    gr.Textbox.update(value=model_id),  # Model ID Textbox
+                                    gr.Textbox.update(value=sha256),  # sha256 textbox
+                                    gr.Button.update(interactive=BtnDownInt, visible=False if installed else True, value=BtnDownTxt),  # Download Button
+                                    gr.Button.update(interactive=True if installed else False, visible=True if installed else False),  # Delete Button
+                                    gr.Textbox.update(interactive=True, value=folder_path if model_name else None),  # Install Path
+                                    gr.Dropdown.update(value=default_subfolder, interactive=True)  # Sub Folder List
                                 )
-    
-    return  (
-            gr.Textbox.update(value=None, interactive=False), # Model File Name Textbox
-            gr.Textbox.update(value=None), # Download URL Textbox
-            gr.Textbox.update(value=None), # Model ID Textbox
-            gr.Textbox.update(value=None), # sha256 textbox
-            gr.Button.update(interactive=False, visible=True), # Download Button
-            gr.Button.update(interactive=False, visible=False), # Delete Button
-            gr.Textbox.update(interactive=False, value=None), # Install Path
-            gr.Dropdown.update(choices=None, value=None, interactive=False) # Sub Folder List
+
+    return (
+        gr.Textbox.update(value=None, interactive=False),  # Model File Name Textbox
+        gr.Textbox.update(value=None),  # Download URL Textbox
+        gr.Textbox.update(value=None),  # Model ID Textbox
+        gr.Textbox.update(value=None),  # sha256 textbox
+        gr.Button.update(interactive=False, visible=True),  # Download Button
+        gr.Button.update(interactive=False, visible=False),  # Delete Button
+        gr.Textbox.update(interactive=False, value=None),  # Install Path
+        gr.Dropdown.update(choices=None, value=None, interactive=False)  # Sub Folder List
     )
+
 
 def get_proxies():
     custom_proxy = getattr(opts, "custom_civitai_proxy", "")
     disable_ssl = getattr(opts, "disable_sll_proxy", False)
     cabundle_path = getattr(opts, "cabundle_path_proxy", "")
-    
+
     ssl = True
     proxies = {}
     if custom_proxy:
@@ -1114,6 +1142,7 @@ def get_proxies():
         }
     return proxies, ssl
 
+
 def get_headers(referer=None, no_api=None):
     api_key = getattr(opts, "custom_api_key", "")
     headers = {
@@ -1126,21 +1155,22 @@ def get_headers(referer=None, no_api=None):
         headers['Referer'] = f"https://civitai.com/models/{referer}"
     if api_key and not no_api:
         headers['Authorization'] = f'Bearer {api_key}'
-    
+
     return headers
+
 
 def request_civit_api(api_url=None, skip_error_check=False):
     headers = get_headers()
     proxies, ssl = get_proxies()
     try:
-        response = requests.get(api_url, headers=headers, timeout=(60,30), proxies=proxies, verify=ssl)
+        response = requests.get(api_url, headers=headers, timeout=(60, 30), proxies=proxies, verify=ssl)
         if skip_error_check:
             response.encoding = "utf-8"
             data = json.loads(response.text)
             return data
         response.raise_for_status()
     except requests.exceptions.Timeout as e:
-        print("The request timed out. Please try again later.")
+        print(f"The request timed out. Please try again later. {e}")
         return "timeout"
     except requests.exceptions.RequestException as e:
         print(f"Error: {e}")
@@ -1154,6 +1184,7 @@ def request_civit_api(api_url=None, skip_error_check=False):
             print("The CivitAI servers are currently offline. Please try again later.")
             return "offline"
     return data
+
 
 def api_error_msg(input_string):
     div = '<div style="color: white; font-family: var(--font); font-size: 24px; text-align: center; margin: 50px !important;">'

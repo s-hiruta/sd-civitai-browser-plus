@@ -7,17 +7,19 @@ import re
 import subprocess
 from modules.shared import opts, cmd_opts
 from modules.paths import extensions_dir
-from scripts.civitai_global import print, debug_print
+from scripts.civitai_global import print  # , debug_print
 import scripts.civitai_global as gl
 import scripts.civitai_download as _download
 import scripts.civitai_file_manage as _file
 import scripts.civitai_api as _api
 
+
 def git_tag():
     try:
         return subprocess.check_output([os.environ.get('GIT', "git"), "describe", "--tags"], shell=False, encoding='utf8').strip()
-    except:
+    except (IndexError, KeyError, TypeError):
         return None
+
 
 try:
     import modules_forge
@@ -35,7 +37,7 @@ if not forge:
             try:
                 from modules import launch_utils
                 ver = launch_utils.git_tag()
-            except:
+            except (IndexError, KeyError, TypeError):
                 ver_bool = False
         if ver:
             ver = ver.split('-')[0].rsplit('-', 1)[0]
@@ -45,6 +47,7 @@ if not forge:
         ver_bool = False
 
 gl.init()
+
 
 def saveSettings(ust, ct, pt, st, bf, cj, td, ol, hi, sn, ss, ts):
     config = cmd_opts.ui_config_file
@@ -64,12 +67,12 @@ def saveSettings(ust, ct, pt, st, bf, cj, td, ol, hi, sn, ss, ts):
         "civitai_interface/Tile size:/value": ss,
         "civitai_interface/Tile count:/value": ts
     }
-    
+
     # Load the current contents of the config file into a dictionary
     try:
         with open(config, "r", encoding="utf8") as file:
             data = json.load(file)
-    except:
+    except (IndexError, KeyError, TypeError):
         print(f"Cannot save settings, failed to open \"{file}\"")
         print("Please try to manually repair the file or remove it to reset settings.")
         return
@@ -87,11 +90,14 @@ def saveSettings(ust, ct, pt, st, bf, cj, td, ol, hi, sn, ss, ts):
         json.dump(data, file, indent=4)
         print(f"Updated settings to: {config}")
 
+
 def all_visible(html_check):
     return gr.Button.update(visible="model-checkbox" in html_check)
-        
+
+
 def HTMLChange(input):
     return gr.HTML.update(value=input)
+
 
 def show_multi_buttons(model_list, type_list, version_value):
     model_list = json.loads(model_list)
@@ -102,7 +108,7 @@ def show_multi_buttons(model_list, type_list, version_value):
     sub_folders = ["None"]
     BtnDwn = version_value and not version_value.endswith('[Installed]') and not model_list
     BtnDel = version_value.endswith('[Installed]')
-    
+
     dot_subfolders = getattr(opts, "dot_subfolders", True)
 
     multi = bool(model_list) and not len(gl.download_queue) > 0
@@ -124,19 +130,20 @@ def show_multi_buttons(model_list, type_list, version_value):
             sub_folders.remove("None")
             sub_folders = sorted(sub_folders, key=lambda x: (x.lower(), x))
             sub_folders.insert(0, "None")
-            
+
             list = set()
             sub_folders = [x for x in sub_folders if not (x in list or list.add(x))]
-        except:
+        except (IndexError, KeyError, TypeError):
             sub_folders = ["None"]
-    
-    return (gr.Button.update(visible=multi, interactive=multi), # Download Multi Button
-            gr.Button.update(visible=BtnDwn if multi else True if not version_value.endswith('[Installed]') else False), # Download Button
-            gr.Button.update(visible=BtnDel if not model_list else False), # Delete Button 
-            gr.Button.update(visible=otherButtons), # Save model info Button
-            gr.Button.update(visible=otherButtons), # Save images Button
-            gr.Dropdown.update(visible=multi, interactive=multi_file_subfolder, choices=sub_folders, value=default_subfolder) # Selected type sub folder
+
+    return (gr.Button.update(visible=multi, interactive=multi),  # Download Multi Button
+            gr.Button.update(visible=BtnDwn if multi else True if not version_value.endswith('[Installed]') else False),  # Download Button
+            gr.Button.update(visible=BtnDel if not model_list else False),  # Delete Button
+            gr.Button.update(visible=otherButtons),  # Save model info Button
+            gr.Button.update(visible=otherButtons),  # Save images Button
+            gr.Dropdown.update(visible=multi, interactive=multi_file_subfolder, choices=sub_folders, value=default_subfolder)  # Selected type sub folder
             )
+
 
 def txt2img_output(image_url):
     clean_url = image_url[4:]
@@ -146,46 +153,47 @@ def txt2img_output(image_url):
         geninfo = nr + geninfo
         return gr.Textbox.update(value=geninfo)
 
+
 def get_base_models():
     api_url = 'https://civitai.com/api/v1/models?baseModels=GetModels'
     json_return = _api.request_civit_api(api_url, True)
     default_options = [
-                "SDXL 1.0",
-                "Pony",
-                "Illustrious",
-                "Flux.1 S",
-                "Flux.1 D",
-                "Flux.1 Kontext",
-                "NoobAI",
-                "Wan Video",
-                "Wan Video 1.3B t2v",
-                "Wan Video 14B t2v",
-                "Wan Video 14B i2v 480p",
-                "Wan Video 14B i2v 720p",
-                "SD 1.5",
-                "SD 1.5 LCM",
-                "SD 1.5 Hyper",
-                "SD 3",
-                "SD 3.5",
-                "SD 3.5 Medium",
-                "SD 3.5 Large",
-                "SD 3.5 Large Turbo",
-                "AuraFlow",
-                "SDXL 1.0 LCM",
-                "SDXL Distilled",
-                "SDXL Turbo",
-                "SDXL Lightning",
-                "SDXL Hyper",
-                "Hunyuan 1",
-                "Hunyuan Video",
-                "HiDream",
-                "Other",
-                ]
-    
+        "SDXL 1.0",
+        "Pony",
+        "Illustrious",
+        "Flux.1 S",
+        "Flux.1 D",
+        "Flux.1 Kontext",
+        "NoobAI",
+        "Wan Video",
+        "Wan Video 1.3B t2v",
+        "Wan Video 14B t2v",
+        "Wan Video 14B i2v 480p",
+        "Wan Video 14B i2v 720p",
+        "SD 1.5",
+        "SD 1.5 LCM",
+        "SD 1.5 Hyper",
+        "SD 3",
+        "SD 3.5",
+        "SD 3.5 Medium",
+        "SD 3.5 Large",
+        "SD 3.5 Large Turbo",
+        "AuraFlow",
+        "SDXL 1.0 LCM",
+        "SDXL Distilled",
+        "SDXL Turbo",
+        "SDXL Lightning",
+        "SDXL Hyper",
+        "Hunyuan 1",
+        "Hunyuan Video",
+        "HiDream",
+        "Other",
+    ]
+
     if not isinstance(json_return, dict):
         print("Couldn't fetch latest baseModel options, using default.")
         return default_options
-    
+
     try:
         options = json_return['error']['issues'][0]['unionErrors'][0]['issues'][0]['options']
         return options
@@ -193,10 +201,11 @@ def get_base_models():
         print(f"Basemodel fetch error extracting options: {e}")
         return default_options
 
-def on_ui_tabs():    
+
+def on_ui_tabs():
     page_header = getattr(opts, "page_header", False)
     lobe_directory = None
-    
+
     for root, dirs, files in os.walk(extensions_dir, followlinks=True):
         for dir_name in fnmatch.filter(dirs, '*lobe*'):
             lobe_directory = os.path.join(root, dir_name)
@@ -210,12 +219,12 @@ def on_ui_tabs():
     toggle5 = "toggle5L" if lobe_directory else "toggle5"
     refreshbtn = "refreshBtnL" if lobe_directory else "refreshBtn"
     filterBox = "filterBoxL" if lobe_directory else "filterBox"
-    
+
     if page_header:
         header = "headerL" if lobe_directory else "header"
     else:
         header = "header_off"
-    
+
     api_key = getattr(opts, "custom_api_key", "")
     if api_key:
         toggle4 = "toggle4L_api" if lobe_directory else "toggle4_api"
@@ -238,9 +247,9 @@ def on_ui_tabs():
                         base_filter = gr.Dropdown(label='Base model:', multiselect=True, choices=get_base_models(), value=None, type="value", elem_id="centerText")
                     with gr.Row():
                         period_type = gr.Dropdown(label='Time period:', choices=["All Time", "Year", "Month", "Week", "Day"], value="All Time", type="value", elem_id="centerText")
-                        sort_type = gr.Dropdown(label='Sort by:', choices=["Newest","Oldest","Most Downloaded","Highest Rated","Most Liked","Most Buzz","Most Discussed","Most Collected","Most Images"], value="Most Downloaded", type="value", elem_id="centerText")
+                        sort_type = gr.Dropdown(label='Sort by:', choices=["Newest", "Oldest", "Most Downloaded", "Highest Rated", "Most Liked", "Most Buzz", "Most Discussed", "Most Collected", "Most Images"], value="Most Downloaded", type="value", elem_id="centerText")
                     with gr.Row(elem_id=component_id):
-                        create_json = gr.Checkbox(label=f"Save info after download", value=True, elem_id=toggle1, min_width=171)
+                        create_json = gr.Checkbox(label="Save info after download", value=True, elem_id=toggle1, min_width=171)
                         show_nsfw = gr.Checkbox(label="NSFW content", value=False, elem_id=toggle2, min_width=107)
                         toggle_date = gr.Checkbox(label="Divide cards by date", value=False, elem_id=toggle3, min_width=142)
                         only_liked = gr.Checkbox(label="Liked models only", value=False, interactive=show_only_liked, elem_id=toggle4, min_width=163)
@@ -258,7 +267,7 @@ def on_ui_tabs():
                     page_slider = gr.Slider(label='Current page:', step=1, minimum=1, maximum=1, min_width=80, elem_id="pageSlider")
                     get_next_page = gr.Button(value="Next page", interactive=False, elem_id="pageBtn2")
                 with gr.Row(elem_id="pageBoxMobile"):
-                    pass # Row used for button placement on mobile
+                    pass  # Row used for button placement on mobile
             with gr.Row(elem_id="select_all_models_container"):
                 select_all = gr.Button(value="Select All", elem_id="select_all_models", visible=False)
             with gr.Row():
@@ -324,15 +333,15 @@ def on_ui_tabs():
             with gr.Row():
                 installed_progress = gr.HTML(value='<div style="min-height: 0px;"></div>')
             with gr.Row():
-                organize_models = gr.Button(value="Organize model files", interactive=True, visible=False) # Organize models hidden until implemented
+                organize_models = gr.Button(value="Organize model files", interactive=True, visible=False)  # Organize models hidden until implemented
                 cancel_organize = gr.Button(value="Cancel loading models", interactive=False, visible=False)
             with gr.Row():
                 organize_progress = gr.HTML(value='<div style="min-height: 0px;"></div>')
         with gr.Tab("Download Queue"):
-            
+
             def get_style(size, left_border):
                 return f"flex-grow: {size};" + ("border-left: 1px solid var(--border-color-primary);" if left_border else "") + "border-bottom: 1px solid var(--border-color-primary);padding: 5px 10px 5px 10px;width: 0;"
-            
+
             download_manager_html = gr.HTML(elem_id="civitai_dl_list", value=f'''
                 <div style="display: flex;font-size: var(--section-header-text-size);border: 1px solid transparent;">
                 <div style="{get_style(1, False)}"><span>Model:</span></div>
@@ -347,7 +356,7 @@ def on_ui_tabs():
                 <div class="list" id="queue_list">
                 </div>
                 ''')
-        
+
         def format_custom_subfolders():
             separator = '␞␞'
             with open(gl.subfolder_json, 'r') as f:
@@ -355,8 +364,8 @@ def on_ui_tabs():
             result = separator.join([f"{key}{separator}{value}" for key, value in data.items()])
             return result
 
-        #Invisible triggers/variables
-        #Yes, there is probably a much better way of passing variables/triggering functions between javascript and python
+        # Invisible triggers/variables
+        # Yes, there is probably a much better way of passing variables/triggering functions between javascript and python
 
         gr.Textbox(elem_id="custom_subfolders_list", visible=False, value=format_custom_subfolders())
         model_id = gr.Textbox(visible=False)
@@ -396,10 +405,10 @@ def on_ui_tabs():
         current_model = gr.Textbox(visible=False)
         current_sha256 = gr.Textbox(visible=False)
         model_preview_html_input = gr.Textbox(visible=False)
-        
+
         def ToggleDate(toggle_date):
             gl.sortNewest = toggle_date
-        
+
         def select_subfolder(sub_folder):
             if sub_folder == "None" or sub_folder == "Only available if the selected files are of the same model type":
                 newpath = gl.main_folder
@@ -408,43 +417,43 @@ def on_ui_tabs():
             return gr.Textbox.update(value=newpath)
 
         # Javascript Functions #
-        
+
         list_html_input.change(fn=None, inputs=hide_installed, _js="(toggleValue) => hideInstalled(toggleValue)")
         hide_installed.input(fn=None, inputs=hide_installed, _js="(toggleValue) => hideInstalled(toggleValue)")
-        
+
         civitai_text2img_output.change(fn=None, inputs=civitai_text2img_output, _js="(genInfo) => genInfo_to_txt2img(genInfo)")
-        
+
         download_selected.click(fn=None, _js="() => deselectAllModels()")
-        
+
         select_all.click(fn=None, _js="() => selectAllModels()")
-        
+
         list_models.select(fn=None, inputs=list_models, _js="(list_models) => select_model(list_models)")
-        
+
         preview_html_input.change(fn=None, _js="() => adjustFilterBoxAndButtons()")
         preview_html_input.change(fn=None, _js="() => setDescriptionToggle()")
-        
+
         back_to_top.click(fn=None, _js="() => BackToTop()")
-        
+
         page_slider.release(fn=None, _js="() => pressRefresh()")
-        
+
         card_updates = [queue_trigger, download_finish, delete_finish]
         for func in card_updates:
             func.change(fn=None, inputs=current_model, _js="(modelName) => updateCard(modelName)")
-        
+
         list_html_input.change(fn=None, inputs=show_nsfw, _js="(hideAndBlur) => toggleNSFWContent(hideAndBlur)")
         show_nsfw.change(fn=None, inputs=show_nsfw, _js="(hideAndBlur) => toggleNSFWContent(hideAndBlur)")
-        
+
         list_html_input.change(fn=None, inputs=size_slider, _js="(size) => updateCardSize(size, size * 1.5)")
         size_slider.change(fn=None, inputs=size_slider, _js="(size) => updateCardSize(size, size * 1.5)")
-        
+
         model_preview_html_input.change(fn=None, inputs=model_preview_html_input, _js="(html_input) => inputHTMLPreviewContent(html_input)")
-        
+
         queue_html_input.change(fn=None, _js="() => setSortable()")
-        
+
         click_first_item.change(fn=None, _js="() => clickFirstFigureInColumn()")
-        
+
         # Filter button Functions #
-        
+
         queue_html_input.change(fn=HTMLChange, inputs=[queue_html_input], outputs=download_manager_html)
         list_html_input.change(fn=HTMLChange, inputs=[list_html_input], outputs=list_html)
         preview_html_input.change(fn=HTMLChange, inputs=[preview_html_input], outputs=preview_html)
@@ -453,18 +462,18 @@ def on_ui_tabs():
             fn=_download.remove_from_queue,
             inputs=[remove_dl_id]
         )
-        
+
         arrange_dl_id.change(
             fn=_download.arrange_queue,
             inputs=[arrange_dl_id]
         )
-        
+
         html_cancel_input.change(
             fn=_download.download_cancel
         )
-        
+
         html_cancel_input.change(fn=None, _js="() => cancelCurrentDl()")
-        
+
         save_settings.click(
             fn=saveSettings,
             inputs=[
@@ -482,50 +491,50 @@ def on_ui_tabs():
                 tile_count_slider
             ]
         )
-        
+
         toggle_date.input(
             fn=ToggleDate,
             inputs=[toggle_date]
         )
-        
+
         # Model Button Functions #
-        
-        civitai_text2img_input.change(fn=txt2img_output,inputs=civitai_text2img_input,outputs=civitai_text2img_output)
-        
+
+        civitai_text2img_input.change(fn=txt2img_output, inputs=civitai_text2img_input, outputs=civitai_text2img_output)
+
         list_html_input.change(fn=all_visible, inputs=list_html, outputs=select_all)
-        
+
         def update_models_dropdown(input):
             if not gl.json_data:
                 return (
-                    gr.Dropdown.update(value=None, choices=[], interactive=False), # List models
-                    gr.Dropdown.update(value=None, choices=[], interactive=False), # List version
-                    gr.Textbox.update(value=None), # Preview HTML
-                    gr.Textbox.update(value=None, interactive=False), # Trained Tags
-                    gr.Textbox.update(value=None, interactive=False), # Base Model
-                    gr.Textbox.update(value=None, interactive=False), # Model filename
-                    gr.Textbox.update(value=None, interactive=False), # Install path
-                    gr.Dropdown.update(value=None, choices=[], interactive=False), # Sub folder
-                    gr.Button.update(interactive=False), # Download model btn
-                    gr.Button.update(interactive=False), # Save image btn
-                    gr.Button.update(interactive=False, visible=False), # Delete model btn
-                    gr.Dropdown.update(value=None, choices=[], interactive=False), # File list
-                    gr.Textbox.update(value=None), # DL Url
-                    gr.Textbox.update(value=None), # Model ID
-                    gr.Textbox.update(value=None), # Current sha256
+                    gr.Dropdown.update(value=None, choices=[], interactive=False),  # List models
+                    gr.Dropdown.update(value=None, choices=[], interactive=False),  # List version
+                    gr.Textbox.update(value=None),  # Preview HTML
+                    gr.Textbox.update(value=None, interactive=False),  # Trained Tags
+                    gr.Textbox.update(value=None, interactive=False),  # Base Model
+                    gr.Textbox.update(value=None, interactive=False),  # Model filename
+                    gr.Textbox.update(value=None, interactive=False),  # Install path
+                    gr.Dropdown.update(value=None, choices=[], interactive=False),  # Sub folder
+                    gr.Button.update(interactive=False),  # Download model btn
+                    gr.Button.update(interactive=False),  # Save image btn
+                    gr.Button.update(interactive=False, visible=False),  # Delete model btn
+                    gr.Dropdown.update(value=None, choices=[], interactive=False),  # File list
+                    gr.Textbox.update(value=None),  # DL Url
+                    gr.Textbox.update(value=None),  # Model ID
+                    gr.Textbox.update(value=None),  # Current sha256
                     gr.Button.update(interactive=False),  # Save model info
-                    gr.Textbox.update(value='<div style="font-size: 24px; text-align: center; margin: 50px;">Click the search icon to load models.<br>Use the filter icon to filter results.</div>') # Model list
+                    gr.Textbox.update(value='<div style="font-size: 24px; text-align: center; margin: 50px;">Click the search icon to load models.<br>Use the filter icon to filter results.</div>')  # Model list
                 )
-            
+
             model_string = re.sub(r'\.\d{3}$', '', input)
             model_name, model_id = _api.extract_model_info(model_string)
             model_versions = _api.update_model_versions(model_id)
             (html, tags, base_mdl, DwnButton, SaveImages, DelButton, filelist, filename, dl_url, id, current_sha256, install_path, sub_folder) = _api.update_model_info(model_string, model_versions.get('value'))
             return (gr.Dropdown.update(value=model_string, interactive=True),
-                    model_versions,html,tags,base_mdl,filename,install_path,sub_folder,DwnButton,SaveImages,DelButton,filelist,dl_url,id,current_sha256,
+                    model_versions, html, tags, base_mdl, filename, install_path, sub_folder, DwnButton, SaveImages, DelButton, filelist, dl_url, id, current_sha256,
                     gr.Button.update(interactive=True),
                     gr.Textbox.update()
                     )
-        
+
         model_select.change(
             fn=update_models_dropdown,
             inputs=[model_select],
@@ -549,19 +558,19 @@ def on_ui_tabs():
                 list_html_input
             ]
         )
-        
+
         model_sent.change(
             fn=_file.model_from_sent,
             inputs=[model_sent, type_sent],
             outputs=[model_preview_html_input]
         )
-        
+
         send_to_browser.change(
             fn=_file.send_to_browser,
             inputs=[send_to_browser, type_sent, click_first_item],
-            outputs=[list_html_input, get_prev_page , get_next_page, page_slider, click_first_item]
+            outputs=[list_html_input, get_prev_page, get_next_page, page_slider, click_first_item]
         )
-        
+
         sub_folder.select(
             fn=select_subfolder,
             inputs=[sub_folder],
@@ -573,7 +582,7 @@ def on_ui_tabs():
             inputs=[
                 list_models,
                 list_versions
-                ],
+            ],
             outputs=[
                 preview_html_input,
                 trained_tags,
@@ -590,7 +599,7 @@ def on_ui_tabs():
                 sub_folder
             ]
         )
-        
+
         file_list.input(
             fn=_api.update_file_info,
             inputs=[
@@ -609,9 +618,9 @@ def on_ui_tabs():
                 sub_folder
             ]
         )
-        
+
         # Download/Save Model Button Functions #
-        
+
         selected_model_list.change(
             fn=show_multi_buttons,
             inputs=[selected_model_list, selected_type_list, list_versions],
@@ -624,7 +633,7 @@ def on_ui_tabs():
                 subfolder_selected
             ]
         )
-        
+
         download_model.click(
             fn=_download.download_start,
             inputs=[
@@ -638,7 +647,7 @@ def on_ui_tabs():
                 model_id,
                 create_json,
                 download_manager_html
-                ],
+            ],
             outputs=[
                 download_model,
                 cancel_model,
@@ -648,7 +657,7 @@ def on_ui_tabs():
                 download_manager_html
             ]
         )
-        
+
         download_selected.click(
             fn=_download.selected_to_queue,
             inputs=[
@@ -657,7 +666,7 @@ def on_ui_tabs():
                 download_start,
                 create_json,
                 download_manager_html
-                ],
+            ],
             outputs=[
                 download_model,
                 cancel_model,
@@ -667,8 +676,7 @@ def on_ui_tabs():
                 download_manager_html
             ]
         )
-        
-        
+
         for component in [download_start, queue_trigger]:
             component.change(fn=None, _js="() => setDownloadProgressBar()")
             component.change(
@@ -688,7 +696,7 @@ def on_ui_tabs():
                 model_filename,
                 list_versions,
                 model_id
-                ],
+            ],
             outputs=[
                 download_model,
                 cancel_model,
@@ -698,13 +706,13 @@ def on_ui_tabs():
                 list_versions
             ]
         )
-        
+
         cancel_model.click(_download.download_cancel)
         cancel_all_model.click(_download.download_cancel_all)
-        
+
         cancel_model.click(fn=None, _js="() => cancelCurrentDl()")
         cancel_all_model.click(fn=None, _js="() => cancelAllDl()")
-        
+
         delete_model.click(
             fn=_file.delete_model,
             inputs=[
@@ -714,7 +722,7 @@ def on_ui_tabs():
                 list_versions,
                 current_sha256,
                 selected_model_list
-                ],
+            ],
             outputs=[
                 download_model,
                 cancel_model,
@@ -724,7 +732,7 @@ def on_ui_tabs():
                 list_versions
             ]
         )
-        
+
         save_info.click(
             fn=_file.save_model_info,
             inputs=[
@@ -733,10 +741,10 @@ def on_ui_tabs():
                 sub_folder,
                 current_sha256,
                 preview_html_input
-                ],
+            ],
             outputs=[]
         )
-        
+
         save_images.click(
             fn=_file.save_images,
             inputs=[
@@ -744,12 +752,12 @@ def on_ui_tabs():
                 model_filename,
                 install_path,
                 sub_folder
-                ],
+            ],
             outputs=[]
         )
-        
+
         # Common input&output lists #
-        
+
         page_inputs = [
             content_type,
             sort_type,
@@ -762,9 +770,9 @@ def on_ui_tabs():
             show_nsfw,
             tile_count_slider
         ]
-        
+
         refresh_inputs = [empty if item == page_slider else item for item in page_inputs]
-        
+
         page_outputs = [
             list_models,
             list_versions,
@@ -796,7 +804,7 @@ def on_ui_tabs():
             skip_hash_toggle,
             do_html_gen
         ]
-        
+
         load_to_browser_inputs = [
             content_type,
             sort_type,
@@ -808,18 +816,18 @@ def on_ui_tabs():
             show_nsfw
         ]
 
-        cancel_btn_list = [cancel_all_tags,cancel_ver_search,cancel_installed,cancel_update_preview]
-        
-        browser = [ver_search,save_all_tags,load_installed,update_preview]
-        
-        browser_installed_load = [cancel_installed,load_to_browser_installed,installed_progress]
-        browser_load = [cancel_ver_search,load_to_browser,version_progress]
-        
+        cancel_btn_list = [cancel_all_tags, cancel_ver_search, cancel_installed, cancel_update_preview]
+
+        browser = [ver_search, save_all_tags, load_installed, update_preview]
+
+        browser_installed_load = [cancel_installed, load_to_browser_installed, installed_progress]
+        browser_load = [cancel_ver_search, load_to_browser, version_progress]
+
         browser_installed_list = page_outputs + browser + browser_installed_load
         browser_list = page_outputs + browser + browser_load
-        
+
         # Page Button Functions #
-        
+
         page_btn_list = {
             refresh.click: (_api.initial_model_page, True),
             search_term.submit: (_api.initial_model_page, True),
@@ -832,12 +840,12 @@ def on_ui_tabs():
             inputs_to_use = refresh_inputs if use_refresh_inputs else page_inputs
             trigger(fn=function, inputs=inputs_to_use, outputs=page_outputs)
             trigger(fn=None, _js="() => multi_model_select()")
-        
+
         for button in cancel_btn_list:
             button.click(fn=_file.cancel_scan)
-        
+
         # Update model Functions #
-        
+
         ver_search.click(
             fn=_file.ver_search_start,
             inputs=[ver_start],
@@ -850,18 +858,18 @@ def on_ui_tabs():
                 update_preview,
                 organize_models,
                 version_progress
-                ]
+            ]
         )
-        
+
         ver_start.change(
             fn=_file.file_scan,
             inputs=file_scan_inputs,
             outputs=[
                 version_progress,
                 ver_finish
-                ]
+            ]
         )
-        
+
         ver_finish.change(
             fn=_file.scan_finish,
             outputs=[
@@ -874,7 +882,7 @@ def on_ui_tabs():
                 load_to_browser
             ]
         )
-        
+
         load_installed.click(
             fn=_file.installed_models_start,
             inputs=[installed_start],
@@ -889,7 +897,7 @@ def on_ui_tabs():
                 installed_progress
             ]
         )
-        
+
         installed_start.change(
             fn=_file.file_scan,
             inputs=file_scan_inputs,
@@ -898,7 +906,7 @@ def on_ui_tabs():
                 installed_finish
             ]
         )
-        
+
         installed_finish.change(
             fn=_file.scan_finish,
             outputs=[
@@ -911,7 +919,7 @@ def on_ui_tabs():
                 load_to_browser_installed
             ]
         )
-        
+
         save_all_tags.click(
             fn=_file.save_tag_start,
             inputs=[tag_start],
@@ -926,7 +934,7 @@ def on_ui_tabs():
                 tag_progress
             ]
         )
-        
+
         tag_start.change(
             fn=_file.file_scan,
             inputs=file_scan_inputs,
@@ -935,7 +943,7 @@ def on_ui_tabs():
                 tag_finish
             ]
         )
-        
+
         tag_finish.change(
             fn=_file.save_tag_finish,
             outputs=[
@@ -947,7 +955,7 @@ def on_ui_tabs():
                 cancel_all_tags
             ]
         )
-        
+
         update_preview.click(
             fn=_file.save_preview_start,
             inputs=[preview_start],
@@ -962,7 +970,7 @@ def on_ui_tabs():
                 preview_progress
             ]
         )
-        
+
         preview_start.change(
             fn=_file.file_scan,
             inputs=file_scan_inputs,
@@ -971,7 +979,7 @@ def on_ui_tabs():
                 preview_finish
             ]
         )
-        
+
         preview_finish.change(
             fn=_file.save_preview_finish,
             outputs=[
@@ -983,7 +991,7 @@ def on_ui_tabs():
                 cancel_update_preview
             ]
         )
-        
+
         organize_models.click(
             fn=_file.organize_start,
             inputs=[organize_start],
@@ -998,7 +1006,7 @@ def on_ui_tabs():
                 organize_progress
             ]
         )
-        
+
         organize_start.change(
             fn=_file.file_scan,
             inputs=file_scan_inputs,
@@ -1007,7 +1015,7 @@ def on_ui_tabs():
                 organize_finish
             ]
         )
-        
+
         organize_finish.change(
             fn=_file.save_preview_finish,
             outputs=[
@@ -1019,14 +1027,13 @@ def on_ui_tabs():
                 cancel_update_preview
             ]
         )
-        
-        
+
         load_to_browser_installed.click(
             fn=_file.load_to_browser,
             inputs=load_to_browser_inputs,
             outputs=browser_installed_list
         )
-        
+
         load_to_browser.click(
             fn=_file.load_to_browser,
             inputs=load_to_browser_inputs,
@@ -1044,18 +1051,21 @@ def on_ui_tabs():
         tab_name = "CivitAI Browser+"
     else:
         tab_name = "Civitai Browser+"
-    
+
     return (civitai_interface, tab_name, "civitai_interface"),
 
+
 def subfolder_list(folder, desc=None):
-    if folder == None:
+    if folder is None:
         return
     model_folder = _api.contenttype_folder(folder, desc)
     sub_folders = _file.getSubfolders(model_folder)
     return sub_folders
 
+
 def make_lambda(folder, desc):
     return lambda: {"choices": subfolder_list(folder, desc)}
+
 
 def on_ui_settings():
     if ver_bool:
@@ -1072,7 +1082,7 @@ def on_ui_settings():
             self.label += f" ({info})"
             return self
         shared.OptionInfo.info = info
-    
+
     # Download Options
     shared.opts.add_option(
         "use_aria2",
@@ -1145,7 +1155,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("creates an api_info.json file when saving any model info with all the API data of the model")
     )
-    
+
     shared.opts.add_option(
         "auto_save_all_img",
         shared.OptionInfo(
@@ -1155,7 +1165,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Automatically saves all the images of a model after downloading")
     )
-    
+
     # Browser Options
     shared.opts.add_option(
         "custom_api_key",
@@ -1196,7 +1206,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         )
     )
-    
+
     shared.opts.add_option(
         "use_local_html",
         shared.OptionInfo(
@@ -1206,7 +1216,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Uses the matching local HTML file when pressing CivitAI button on model cards in txt2img and img2img")
     )
-    
+
     shared.opts.add_option(
         "local_path_in_html",
         shared.OptionInfo(
@@ -1216,7 +1226,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Only works if all images of the corresponding model are downloaded")
     )
-    
+
     shared.opts.add_option(
         "page_header",
         shared.OptionInfo(
@@ -1236,7 +1246,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Disable this option if you're experiencing high CPU usage during video/gif playback")
     )
-    
+
     shared.opts.add_option(
         "individual_meta_btn",
         shared.OptionInfo(
@@ -1246,7 +1256,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Turns individual prompts from an example image into a button to send it to txt2img")
     )
-    
+
     shared.opts.add_option(
         "model_desc_to_json",
         shared.OptionInfo(
@@ -1266,7 +1276,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         )
     )
-    
+
     shared.opts.add_option(
         "civitai_send_to_browser",
         shared.OptionInfo(
@@ -1276,7 +1286,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         )
     )
-    
+
     shared.opts.add_option(
         "image_location",
         shared.OptionInfo(
@@ -1296,7 +1306,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Will append any content type and sub folders to the custom path.")
     )
-    
+
     shared.opts.add_option(
         "save_to_custom",
         shared.OptionInfo(
@@ -1306,7 +1316,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         )
     )
-    
+
     shared.opts.add_option(
         "custom_civitai_proxy",
         shared.OptionInfo(
@@ -1318,7 +1328,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Only works with proxies that support HTTPS, turn Aria2 off for proxy downloads")
     )
-        
+
     shared.opts.add_option(
         "cabundle_path_proxy",
         shared.OptionInfo(
@@ -1330,7 +1340,7 @@ def on_ui_settings():
             **({'category_id': cat_id} if ver_bool else {})
         ).info("Specify custom CA bundle for SSL certificate checks if required")
     )
-            
+
     shared.opts.add_option(
         "disable_sll_proxy",
         shared.OptionInfo(
@@ -1366,7 +1376,7 @@ def on_ui_settings():
     ]
 
     for folder in folders:
-        if folder == None:
+        if folder is None:
             continue
         desc = None
         if isinstance(folder, tuple):
@@ -1380,8 +1390,9 @@ def on_ui_settings():
         if folder == "LORA, LoCon, DoRA":
             folder = "LORA"
             setting_name = "LORA_LoCon"
-        
+
         shared.opts.add_option(f"{setting_name}_default_subfolder", shared.OptionInfo("None", folder_name, gr.Dropdown, make_lambda(folder, desc), section=download, **({'category_id': cat_id} if ver_bool else {})))
-    
+
+
 script_callbacks.on_ui_tabs(on_ui_tabs)
 script_callbacks.on_ui_settings(on_ui_settings)
