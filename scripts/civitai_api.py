@@ -220,10 +220,19 @@ def model_list_html(json_data):
             baseModel = "Not Found"
 
         try:
-            if 'publishedAt' in item['modelVersions'][0]:
-                date = item['modelVersions'][0]['publishedAt'].split('T')[0]
+            published_at = item['modelVersions'][0].get('publishedAt')
+            if published_at:
+                date = published_at.split('T')[0]
+            else:
+                date = "Not Found"
         except (IndexError, KeyError, TypeError):
             date = "Not Found"
+
+        # try:
+        #     if 'publishedAt' in item['modelVersions'][0]:
+        #         date = item['modelVersions'][0]['publishedAt'].split('T')[0]
+        # except (IndexError, KeyError, TypeError):
+        #     date = "Not Found"
 
         if item.get("nsfw"):
             nsfw = "civcardnsfw"
