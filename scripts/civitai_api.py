@@ -675,9 +675,10 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                             break
 
                 model_availability = selected_version.get('availability', 'Unknown')
-                try:
-                    model_date_published = selected_version.get('publishedAt', '').split('T')[0]
-                except selected_version.NotFound:
+                published_at = selected_version.get('publishedAt')
+                if published_at:
+                    model_date_published = published_at.split('T')[0]
+                else:
                     model_date_published = "Not Found"
                 version_name = selected_version['name']
                 version_id = selected_version['id']
