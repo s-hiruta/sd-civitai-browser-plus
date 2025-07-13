@@ -169,53 +169,48 @@ def selected_to_queue(model_list, subfolder, download_start, create_json, curren
         current_count = 0
 
     model_list = json.loads(model_list)
-    items_by_id = {int(item['id']): item for item in gl.json_data['items']}
-    is_windows = platform.system() == "Windows"
 
     for model_string in model_list:
         model_name, model_id = _api.extract_model_info(model_string)
-        item = items_by_id.get(int(model_id))
-
-        if not item:
-            continue  # Skip if not found
-
-        model_id = item['id']
-        desc = item.get('description', '')
-        content_type = item.get('type', '')
-
-        version = item.get('modelVersions', [{}])[0]
-        version_name = version.get('name', '')
-        version_id = version.get('id', '')
-        files = version.get('files', [])
-
-        if not files:
-            continue  # Skip if no files available
-
-        primary_file = next((file for file in files if file.get('primary', False)), files[0])
-        model_filename = _api.cleaned_name(primary_file.get('name'))
-        model_sha256 = primary_file.get('hashes', {}).get('SHA256')
-        dl_url = primary_file.get('downloadUrl')
+        for item in gl.json_data['items']:
+            if int(item['id']) == int(model_id):
+                model_id, desc, content_type = item['id'], item['description'], item['type']
+                version = item.get('modelVersions', [])[0]
+                version_name = version.get('name')
+                files = version.get('files', [])
+                primary_file = next((file for file in files if file.get('primary', False)), None)
+                if primary_file:
+                    model_filename = _api.cleaned_name(primary_file.get('name'))
+                    model_sha256 = primary_file.get('hashes', {}).get('SHA256')
+                    dl_url = primary_file.get('downloadUrl')
+                else:
+                    model_filename = _api.cleaned_name(files[0].get('name'))
+                    model_sha256 = files[0].get('hashes', {}).get('SHA256')
+                    dl_url = files[0].get('downloadUrl')
+                break
 
         model_folder = _api.contenttype_folder(content_type, desc)
-        default_subfolder = _api.sub_folder_value(content_type, desc)
 
+        default_subfolder = _api.sub_folder_value(content_type, desc)
         if default_subfolder != "None":
             default_subfolder = _file.convertCustomFolder(
-                default_subfolder, output_basemodel, nsfw, model_uploader, model_name, model_id, version_name, version_id
+                default_subfolder, output_basemodel, nsfw, model_uploader, model_name, model_id, version_name, version.get("id")
             )
 
-        if subfolder and subfolder not in ("None", "Only available if the selected files are of the same model type"):
+        if subfolder and subfolder != "None" and subfolder != "Only available if the selected files are of the same model type":
             from_batch = False
-            if is_windows:
+            if platform.system() == "Windows":
                 subfolder = re.sub(r'[/:*?"<>|]', '', subfolder)
 
             if not subfolder.startswith(os.sep):
                 subfolder = os.sep + subfolder
-
             install_path = model_folder + subfolder
         else:
             from_batch = True
-            install_path = model_folder + default_subfolder if default_subfolder != "None" else model_folder
+            if default_subfolder != "None":
+                install_path = model_folder + default_subfolder
+            else:
+                install_path = model_folder
 
         model_item = create_model_item(dl_url, model_filename, install_path, model_name, version_name, model_sha256, model_id, create_json, from_batch)
         if model_item:
@@ -227,7 +222,7 @@ def selected_to_queue(model_list, subfolder, download_start, create_json, curren
     return (
         gr.Button.update(interactive=False, visible=False),  # Download Button
         gr.Button.update(interactive=True, visible=True),  # Cancel Button
-        gr.Button.update(interactive=(len(gl.download_queue) > 1), visible=True),  # Cancel All Button
+        gr.Button.update(interactive=True if len(gl.download_queue) > 1 else False, visible=True),  # Cancel All Button
         gr.Textbox.update(value=number),  # Download Start Trigger
         gr.HTML.update(value='<div style="min-height: 100px;"></div>'),  # Download Progress
         gr.HTML.update(value=html)  # Download Manager HTML
