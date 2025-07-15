@@ -1,4 +1,4 @@
-import requests
+import requests  # type: ignore
 import json
 import gradio as gr
 import urllib.request
@@ -12,9 +12,9 @@ from PIL import Image
 from io import BytesIO
 from collections import defaultdict
 from datetime import datetime, timezone
-from modules.images import read_info_from_image
-from modules.shared import cmd_opts, opts
-from modules.paths import models_path, extensions_dir, data_path
+from modules.images import read_info_from_image  # type: ignore
+from modules.shared import cmd_opts, opts  # type: ignore
+from modules.paths import models_path, extensions_dir, data_path  # type: ignore
 from html import escape
 from scripts.civitai_global import print, debug_print
 import scripts.civitai_global as gl

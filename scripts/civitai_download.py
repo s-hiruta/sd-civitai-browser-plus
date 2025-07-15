@@ -1,4 +1,4 @@
-import requests
+import requests  # type: ignore
 import gradio as gr
 import time
 import subprocess

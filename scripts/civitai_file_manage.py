@@ -8,7 +8,7 @@ import io
 import re
 import time
 import errno
-import requests
+import requests  # type: ignore
 import hashlib
 import base64
 from PIL import Image
