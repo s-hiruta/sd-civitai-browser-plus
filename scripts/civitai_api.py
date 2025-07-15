@@ -745,6 +745,10 @@ def update_model_info(model_string=None, model_version=None, only_html=False, in
                 url = f"https://civitai.com/api/v1/model-versions/{selected_version['id']}"
                 api_version = request_civit_api(url)
 
+                if not isinstance(api_version, dict) or 'images' not in api_version:
+                    print(f"[Warning] Unexpected API response: {api_version}")
+                    return "", *([None] * 12)  # Match expected return values for this function
+
                 for index, pic in enumerate(api_version['images']):
 
                     if from_preview:
