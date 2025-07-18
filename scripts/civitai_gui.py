@@ -5,8 +5,8 @@ import json
 import fnmatch
 import re
 import subprocess
-from modules.shared import opts, cmd_opts
-from modules.paths import extensions_dir
+from modules.shared import opts, cmd_opts  # type: ignore
+from modules.paths import extensions_dir  # type: ignore
 from scripts.civitai_global import print  # , debug_print
 import scripts.civitai_global as gl
 import scripts.civitai_download as _download
@@ -35,7 +35,7 @@ if not forge:
 
         if not ver:
             try:
-                from modules import launch_utils
+                from modules import launch_utils  # type: ignore
                 ver = launch_utils.git_tag()
             except (IndexError, KeyError, TypeError):
                 ver_bool = False
@@ -1071,7 +1071,7 @@ def on_ui_settings():
     if ver_bool:
         browser = ("civitai_browser", "Browser")
         download = ("civitai_browser_download", "Downloads")
-        from modules.options import categories
+        from modules.options import categories  # type: ignore
         categories.register_category("civitai_browser_plus", "CivitAI Browser+")
         cat_id = "civitai_browser_plus"
     else:

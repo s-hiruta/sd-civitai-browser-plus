@@ -14,7 +14,7 @@ import base64
 from PIL import Image
 from pathlib import Path
 from urllib.parse import urlparse
-from modules.shared import cmd_opts, opts
+from modules.shared import cmd_opts, opts  # type: ignore
 from scripts.civitai_global import print, debug_print
 import scripts.civitai_global as gl
 import scripts.civitai_api as _api

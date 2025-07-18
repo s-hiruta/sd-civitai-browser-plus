@@ -1,4 +1,4 @@
-from modules.shared import opts
+from modules.shared import opts  # type: ignore
 do_debug_print = getattr(opts, "civitai_debug_prints", False)
 
 

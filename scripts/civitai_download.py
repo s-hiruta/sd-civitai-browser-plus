@@ -10,7 +10,7 @@ import platform
 import stat
 import json
 from pathlib import Path
-from modules.shared import opts, cmd_opts
+from modules.shared import opts, cmd_opts  # type: ignore
 from scripts.civitai_global import print  # , debug_print
 import scripts.civitai_global as gl
 import scripts.civitai_api as _api
