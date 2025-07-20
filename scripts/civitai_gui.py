@@ -155,7 +155,7 @@ def txt2img_output(image_url):
 
 
 def get_base_models():
-    api_url = 'https://civitai.com/api/v1/models?baseModels=GetModels'
+    api_url = 'https://civitai.com/api/v1/models?baseModels=INVALID_TRIGGER'  # Changed GetModels to INVALID_TRIGGER for because neither exist.
     json_return = _api.request_civit_api(api_url, True)
     default_options = [
         "SDXL 1.0",
@@ -196,7 +196,7 @@ def get_base_models():
 
     try:
         # Attempt to pull the allowed baseModel values from the error response
-        options = json_return['error']['issues'][0]['unionErrors'][0]['issues'][0]['values']
+        options = json_return['error']['issues'][0]['unionErrors'][0][0]['values']
         if isinstance(options, list):
             return sorted(set(options))  # Clean duplicates just in case
         raise KeyError("Invalid format for base model values")
