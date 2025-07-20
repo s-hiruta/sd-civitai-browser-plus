@@ -12,6 +12,7 @@ import scripts.civitai_global as gl
 import scripts.civitai_download as _download
 import scripts.civitai_file_manage as _file
 import scripts.civitai_api as _api
+import pprint
 
 
 def git_tag():
@@ -195,12 +196,14 @@ def get_base_models():
         return default_options
 
     try:
-        # Attempt to pull the allowed baseModel values from the error response
-        options = json_return['error']['issues'][0]['unionErrors'][0][0]['values']
+        # Parse the 'message' field as JSON
+        error_message = json_return.get("error", {}).get("message", "")
+        parsed_issues = json.loads(error_message)
+        options = parsed_issues[0]['errors'][0][0]['values']
         if isinstance(options, list):
-            return sorted(set(options))  # Clean duplicates just in case
-        raise KeyError("Invalid format for base model values")
-    except (KeyError, IndexError, TypeError) as e:
+            return sorted(set(options))
+        raise TypeError("Extracted baseModels options are not a list.")
+    except (KeyError, IndexError, TypeError, json.JSONDecodeError) as e:
         print(f"Basemodel fetch error extracting options: {e}")
         return default_options
 
