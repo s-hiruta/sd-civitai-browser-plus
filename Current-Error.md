@@ -50,3 +50,30 @@ Traceback (most recent call last):
     "preview_html": preview_html['value'],
 TypeError: string indices must be integers
 ```
+
+Start-Up Error:
+```
+CivitAI Browser+: Basemodel fetch error extracting options: 'issues'
+```
+
+Cancel All Error:
+```
+Traceback (most recent call last):
+  File ".../stable-diffusion-webui/venv/lib/python3.10/site-packages/gradio/routes.py", line 488, in run_predict
+    output = await app.get_blocks().process_api(
+  File ".../stable-diffusion-webui/venv/lib/python3.10/site-packages/gradio/blocks.py", line 1431, in process_api
+    result = await self.call_function(
+  File ".../stable-diffusion-webui/venv/lib/python3.10/site-packages/gradio/blocks.py", line 1103, in call_function
+    prediction = await anyio.to_thread.run_sync(
+  File ".../stable-diffusion-webui/venv/lib/python3.10/site-packages/anyio/to_thread.py", line 33, in run_sync
+    return await get_asynclib().run_sync_in_worker_thread(
+  File ".../stable-diffusion-webui/venv/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 877, in run_sync_in_worker_thread
+    return await future
+  File ".../stable-diffusion-webui/venv/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 807, in run
+    result = context.run(func, *args)
+  File ".../stable-diffusion-webui/venv/lib/python3.10/site-packages/gradio/utils.py", line 707, in wrapper
+    response = f(*args, **kwargs)
+  File ".../stable-diffusion-webui/extensions/custom-sd-civitai-browser-plus/scripts/civitai_download.py", line 364, in download_cancel_all
+    if item:
+UnboundLocalError: local variable 'item' referenced before assignment
+```
