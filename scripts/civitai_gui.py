@@ -195,9 +195,12 @@ def get_base_models():
         return default_options
 
     try:
-        options = json_return['error']['issues'][0]['unionErrors'][0]['issues'][0]['options']
-        return options
-    except (KeyError, IndexError) as e:
+        # Attempt to pull the allowed baseModel values from the error response
+        options = json_return['error']['issues'][0]['unionErrors'][0]['issues'][0]['values']
+        if isinstance(options, list):
+            return sorted(set(options))  # Clean duplicates just in case
+        raise KeyError("Invalid format for base model values")
+    except (KeyError, IndexError, TypeError) as e:
         print(f"Basemodel fetch error extracting options: {e}")
         return default_options
 
