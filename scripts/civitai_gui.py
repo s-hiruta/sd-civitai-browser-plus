@@ -200,7 +200,8 @@ def get_base_models():
         parsed_issues = json.loads(error_message)
         options = parsed_issues[0]['errors'][0][0]['values']
         if isinstance(options, list):
-            return sorted(set(options))
+            return default_options  # Returning default_options for personal sorting preference.
+            # return sorted(set(options))
         raise TypeError("Extracted baseModels options are not a list.")
     except (KeyError, IndexError, TypeError, json.JSONDecodeError) as e:
         print(f"Basemodel fetch error extracting options: {e}")
