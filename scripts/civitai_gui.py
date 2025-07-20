@@ -12,7 +12,6 @@ import scripts.civitai_global as gl
 import scripts.civitai_download as _download
 import scripts.civitai_file_manage as _file
 import scripts.civitai_api as _api
-import pprint
 
 
 def git_tag():

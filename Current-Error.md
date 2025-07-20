@@ -51,11 +51,6 @@ Traceback (most recent call last):
 TypeError: string indices must be integers
 ```
 
-Start-Up Error:
-```
-CivitAI Browser+: Basemodel fetch error extracting options: 'issues'
-```
-
 Cancel All Error:
 ```
 Traceback (most recent call last):
