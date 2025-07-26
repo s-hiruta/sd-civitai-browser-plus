@@ -229,7 +229,7 @@ def get_image_path(install_path, api_response, sub_folder):
     return image_path
 
 
-def save_images(preview_html, model_filename, install_path, sub_folder, api_response=None):
+def save_images(preview_html, model_filename, install_path, sub_folder, api_response=None, overwrite_toggle=True):
     image_path = get_image_path(install_path, api_response, sub_folder)
     img_urls = re.findall(r'data-sampleimg="true" src=[\'"]?([^\'" >]+)', preview_html)
 
@@ -241,15 +241,16 @@ def save_images(preview_html, model_filename, install_path, sub_folder, api_resp
 
     for i, img_url in enumerate(img_urls):
         filename = f'{name}_{i}.jpg'
-        img_url = urllib.parse.quote(img_url, safe=':/=')
-        try:
-            with urllib.request.urlopen(img_url) as url:
-                with open(os.path.join(image_path, filename), 'wb') as f:
-                    f.write(url.read())
-                    print(f"Downloaded {filename}")
+        if not os.path.exists(f'{image_path}/{filename}') or overwrite_toggle:
+            img_url = urllib.parse.quote(img_url, safe=':/=')
+            try:
+                with urllib.request.urlopen(img_url) as url:
+                    with open(os.path.join(image_path, filename), 'wb') as f:
+                        f.write(url.read())
+                        print(f"Downloaded {filename}")
 
-        except urllib.error.URLError as e:
-            print(f'Error: {e.reason}')
+            except urllib.error.URLError as e:
+                print(f'Error: {e.reason}')
 
 
 def card_update(gr_components, model_name, list_versions, is_install):
@@ -679,6 +680,7 @@ def save_model_info(install_path, file_name, sub_folder, sha256=None, preview_ht
 
     if preview_html:
         if use_local:
+            save_images(preview_html, file_name, install_path, sub_folder, api_response, overwrite_toggle)
             img_urls = re.findall(r'data-sampleimg="true" src=[\'"]?([^\'" >]+)', preview_html)
             for i, img_url in enumerate(img_urls):
                 img_name = f'{filename}_{i}.jpg'
