@@ -504,7 +504,8 @@ def insert_metadata(page_nr, api_url=None):
     return gl.json_data
 
 
-def update_model_versions(model_id, json_input=None):
+def update_model_versions(model_id, json_input=None, default_version_id=None):
+    default_value = None
     if json_input:
         api_json = json_input
     else:
@@ -524,12 +525,14 @@ def update_model_versions(model_id, json_input=None):
             version_files = set()
             for version in versions:
                 versions_dict[version['name']].append(item["name"])
+                if default_value is None and default_version_id is not None and default_version_id == version['id']:
+                    default_value = version['name']
                 for version_file in version['files']:
                     file_sha256 = version_file.get('hashes', {}).get('SHA256', "").upper()
                     version_filename = os.path.splitext(version_file['name'])[0]
                     version_extension = os.path.splitext(version_file['name'])[1]
                     version_filename = f"{version_filename}_{version_file['id']}{version_extension}"
-                    version_files.add((version['name'], version_filename, file_sha256))
+                    version_files.add((version['name'], version['id'], version_filename, file_sha256))
 
             for root, _, files in os.walk(model_folder, followlinks=True):
                 for file in files:
@@ -541,7 +544,7 @@ def update_model_versions(model_id, json_input=None):
                                 if isinstance(json_data, dict):
                                     if 'sha256' in json_data and json_data['sha256']:
                                         sha256 = json_data.get('sha256', "").upper()
-                                        for version_name, _, file_sha256 in version_files:
+                                        for version_name, _, _, file_sha256 in version_files:
                                             if sha256 == file_sha256:
                                                 installed_versions.add(version_name)
                                                 break
@@ -549,7 +552,7 @@ def update_model_versions(model_id, json_input=None):
                             print(f"failed to read: \"{file}\": {e}")
 
                     # filename_check
-                    for version_name, version_filename, _ in version_files:
+                    for version_name, _, version_filename, _ in version_files:
                         if file.lower() == version_filename.lower():
                             installed_versions.add(version_name)
                             break
@@ -557,7 +560,8 @@ def update_model_versions(model_id, json_input=None):
             version_names = list(versions_dict.keys())
             display_version_names = [f"{v} [Installed]" if v in installed_versions else v for v in version_names]
             default_installed = next((f"{v} [Installed]" for v in installed_versions), None)
-            default_value = default_installed or next(iter(version_names), None)
+            if default_value is None:
+                default_value = default_installed or next(iter(version_names), None)
 
             return gr.Dropdown.update(choices=display_version_names, value=default_value, interactive=True)  # Version List
 

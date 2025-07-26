@@ -419,7 +419,7 @@ def model_from_sent(model_name, content_type):
                     output_html = convert_local_images(output_html)
 
     if not output_html:
-        modelID = get_models(model_file, True)
+        modelID, modelVersionID = get_models(model_file, True)
         if not modelID or modelID == "Model not found":
             output_html = _api.api_error_msg("not_found")
             modelID_failed = True
@@ -509,7 +509,7 @@ def send_to_browser(model_name, content_type, click_first_item):
         print(f'Content type: "{content_type}"')
         print(f'Main folder path: "{folder}"')
     if not output_html:
-        modelID = get_models(model_file, True)
+        modelID, modelVersionID = get_models(model_file, True)
         if not modelID or modelID == "Model not found":
             output_html = _api.api_error_msg("not_found")
             modelID_failed = True
@@ -686,19 +686,20 @@ def save_model_info(install_path, file_name, sub_folder, sha256=None, preview_ht
                 img_name = f'{filename}_{i}.jpg'
                 preview_html = preview_html.replace(img_url, f'{os.path.join(image_path, img_name)}')
 
-        match = re.search(r'(\s*)<div class="model-block">', preview_html)
-        if match:
-            indentation = match.group(1)
-        else:
-            indentation = ''
-        css_link = f'<link rel="stylesheet" type="text/css" href="{css_path}">'
-        utf8_meta_tag = f'{indentation}<meta charset="UTF-8">'
-        head_section = f'{indentation}<head>{indentation}    {utf8_meta_tag}{indentation}    {css_link}{indentation}</head>'
-        HTML = head_section + preview_html
         path_to_new_file = os.path.join(save_path, f'{filename}.html')
-        with open(path_to_new_file, 'wb') as f:
-            f.write(HTML.encode('utf8'))
-        print(f"HTML saved at \"{path_to_new_file}\"")
+        if not os.path.exists(path_to_new_file) or overwrite_toggle:
+            match = re.search(r'(\s*)<div class="model-block">', preview_html)
+            if match:
+                indentation = match.group(1)
+            else:
+                indentation = ''
+            css_link = f'<link rel="stylesheet" type="text/css" href="{css_path}">'
+            utf8_meta_tag = f'{indentation}<meta charset="UTF-8">'
+            head_section = f'{indentation}<head>{indentation}    {utf8_meta_tag}{indentation}    {css_link}{indentation}</head>'
+            HTML = head_section + preview_html
+            with open(path_to_new_file, 'wb') as f:
+                f.write(HTML.encode('utf8'))
+            print(f"HTML saved at \"{path_to_new_file}\"")
 
     if save_api_info:
         path_to_new_file = os.path.join(save_path, f'{filename}.api_info.json')
@@ -805,7 +806,7 @@ def get_models(file_path, gen_hash=None):
         if sha256:
             by_hash = f"https://civitai.com/api/v1/model-versions/by-hash/{sha256}"
         else:
-            return modelId if modelId else None
+            return (modelId, modelVersionId) if modelId else (None, None)
 
     proxies, ssl = _api.get_proxies()
     try:
@@ -815,12 +816,12 @@ def get_models(file_path, gen_hash=None):
                 api_response = response.json()
                 if 'error' in api_response:
                     print(f"\"{file_path}\": {api_response['error']}")
-                    return None
+                    return None, None
                 else:
                     modelId = api_response.get("modelId", "")
                     modelVersionId = api_response.get("id", "")
             elif response.status_code == 503:
-                return "offline"
+                return "offline", None
             elif response.status_code == 404:
                 modelId = "Model not found"
                 modelVersionId = "Model not found"
@@ -847,16 +848,16 @@ def get_models(file_path, gen_hash=None):
                 with open(json_file, 'w', encoding="utf-8") as f:
                     json.dump(data, f, indent=4)
 
-        return modelId
+        return modelId,  modelVersionId
     except requests.exceptions.Timeout:
         print(f"Request timed out for {file_path}. Skipping...")
-        return "offline"
+        return "offline", None
     except requests.exceptions.ConnectionError:
         print("Failed to connect to the API. The CivitAI servers might be offline.")
-        return "offline"
+        return "offline", None
     except Exception as e:
         print(f"An error occurred for {file_path}: {str(e)}")
-        return None
+        return None, None
 
 
 def version_match(file_paths, api_response):
@@ -1020,6 +1021,7 @@ def file_scan(folders, ver_finish, tag_finish, installed_finish, preview_finish,
     all_model_ids = []
     file_paths = []
     all_ids = []
+    all_version_ids = []
 
     not_found_print = getattr(opts, "civitai_not_found_print", True)
 
@@ -1036,7 +1038,7 @@ def file_scan(folders, ver_finish, tag_finish, installed_finish, preview_finish,
         if progress is not None:
             progress(files_done / total_files, desc=f"Processing file: {file_name}")
 
-        model_id = get_models(file_path, gen_hash)
+        model_id, model_version_id = get_models(file_path, gen_hash)
         if model_id == "offline":
             print("The CivitAI servers did not respond, unable to retrieve Model ID")
         elif model_id == "Model not found":
@@ -1045,6 +1047,7 @@ def file_scan(folders, ver_finish, tag_finish, installed_finish, preview_finish,
         elif model_id is not None:
             all_model_ids.append(f"&ids={model_id}")
             all_ids.append(model_id)
+            all_version_ids.append(model_version_id)
             file_paths.append(file_path)
         elif not model_id:
             print(f"model ID not found for: \"{file_name}\"")
@@ -1165,10 +1168,10 @@ def file_scan(folders, ver_finish, tag_finish, installed_finish, preview_finish,
         completed_tags = 0
         tag_count = len(file_paths)
 
-        for file_path, id_value in zip(file_paths, all_ids):
+        for file_path, id_value, version_id_value in zip(file_paths, all_ids, all_version_ids):
             install_path, file_name = os.path.split(file_path)
             save_path, name = get_save_path_and_name(install_path, file_name, api_response)
-            model_versions = _api.update_model_versions(id_value, api_response)
+            model_versions = _api.update_model_versions(id_value, api_response, version_id_value)
             html_path = os.path.join(save_path, f'{name}.html')
 
             if create_html and not os.path.exists(html_path) or create_html and overwrite_toggle:
